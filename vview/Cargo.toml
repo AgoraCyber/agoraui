@@ -1,0 +1,11 @@
+[package]
+name = "agorui-vview"
+license = "MIT"
+edition.workspace = true
+version.workspace = true
+description = "Agora ui virtual view components"
+documentation = "https://docs.rs/agorui-vview"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
