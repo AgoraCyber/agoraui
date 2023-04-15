@@ -1,21 +1,15 @@
-# [package]
-# name = "agorui"
-# license = "MIT"
-# edition.workspace = true
-# version.workspace = true
-# description = "RustUI helps us build great-looking apps across all platforms with the power of rust)"
-# documentation = "https://docs.rs/agorui"
+[package]
+name = "web3ui"
+license = "MIT"
+edition.workspace = true
+version.workspace = true
+description = "web3ui helps us build great-looking apps across all platforms with the power of rust :)"
+documentation = "https://docs.rs/web3ui"
 
-# [dependencies]
-# libipld = { workspace = true }
-# thiserror = { workspace = true }
-# serde = { workspace = true }
-# hex = { workspace = true }
-# anyhow = { workspace = true }
-# lru-mem = { workspace = true }
+[dependencies]
 
 [workspace]
-members = ["vview"]
+members = ["./", "compose"]
 
 [workspace.package]
 version = "0.1.0"
