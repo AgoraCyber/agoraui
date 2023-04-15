@@ -1,0 +1,16 @@
+[package]
+description = "Web3UI ecs system"
+documentation = "https://docs.rs/web3ui-ecs"
+edition.workspace = true
+license = "MIT"
+name = "web3ui-ecs"
+version.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+uuid = {workspace = true, features = ["v4", "v7", "js"]}
+
+[dev-dependencies]
+log = {workspace = true}
+pretty_env_logger = {workspace = true}
