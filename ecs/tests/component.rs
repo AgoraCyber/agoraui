@@ -5,7 +5,7 @@ use libecs::{
 };
 use serde::{Deserialize, Serialize};
 
-#[component(PositionSystem)]
+#[component("Position")]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 struct Position {
     x: u64,

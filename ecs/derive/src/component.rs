@@ -1,9 +1,9 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse::Parse, ItemStruct, Type};
+use syn::{parse::Parse, ItemStruct, LitStr};
 
 pub struct Args {
-    type_name: Type,
+    type_name: LitStr,
 }
 
 impl Parse for Args {
@@ -15,7 +15,7 @@ impl Parse for Args {
 }
 
 pub struct Component {
-    system_type: Type,
+    system_type: LitStr,
     item: ItemStruct,
 }
 
@@ -79,7 +79,19 @@ impl Component {
                 }
 
                 fn system(&self) -> &libecs::Uuid {
-                    #system_type::id()
+                   static UUID: libecs::once_cell::sync::Lazy<Uuid> = once_cell::sync::Lazy::new(|| {
+                        use libecs::sha3::Digest;
+
+                        let mut hasher = libecs::sha3::Keccak256::new();
+
+                        hasher.update(#system_type.as_bytes());
+
+                        let buff: [u8; 32] = hasher.finalize().into();
+
+                        libecs::Uuid::from_bytes(buff[0..16].try_into().unwrap())
+                    });
+
+                    &UUID
                 }
 
                 fn as_any(&self) -> &dyn std::any::Any {
