@@ -32,11 +32,7 @@ mod tests {
     fn test_derive() {
         _ = pretty_env_logger::try_init();
 
-        let pos = Position::new(1, 2);
-
-        log::debug!("{}", serde_json::to_string(&pos).unwrap());
-
-        let pos = Position::new_with_id(Uuid::new_v4(), 1, 2);
+        let pos = Position::new(Uuid::new_v4(), 1, 2);
 
         log::debug!("{}", serde_json::to_string(&pos).unwrap());
 
@@ -50,13 +46,13 @@ mod tests {
     fn test_register() {
         _ = pretty_env_logger::try_init();
 
-        let p1 = Position::new_with_id(
+        let p1 = Position::new(
             Uuid::from_str("b41c2ebb-5c9f-4210-8ad5-aca5f695a4e5").unwrap(),
             1,
             2,
         );
 
-        let p2 = Position::new_with_id(
+        let p2 = Position::new(
             Uuid::from_str("9f4d8212-8ea0-418d-b6de-b7c5c8965681").unwrap(),
             3,
             4,
@@ -77,6 +73,14 @@ mod tests {
             assert_eq!(*pos[0], p2);
 
             assert_eq!(*pos[1], p1);
+
+            world
+                .unregister_entity(p1.entity())
+                .unregister_entity(p2.entity());
+
+            let pos: Vec<&Position> = world.get_system_components(PositionSystem::id());
+
+            assert_eq!(pos.len(), 0);
         }
     }
 }

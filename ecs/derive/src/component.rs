@@ -53,29 +53,23 @@ impl Component {
         let codes = quote! {
             #(#attrs)*
             #vis struct #struct_name #ty_generics #where_clause {
-                comp_uuid: libecs::Uuid,
+                __entity_id: libecs::Uuid,
                 #fields
             }
 
             impl #ty_generics #struct_name #impl_generics #where_clause {
-                #vis fn new(#fields) -> Self {
-                    Self {
-                        comp_uuid: libecs::Uuid::new_v4(),
-                        #(#field_names,)*
-                    }
-                }
 
-                #vis fn new_with_id(id: libecs::Uuid, #fields) -> Self {
+                #vis fn new(entity_id: libecs::Uuid, #fields) -> Self {
                     Self {
-                        comp_uuid: id,
+                        __entity_id: entity_id,
                         #(#field_names,)*
                     }
                 }
             }
 
             impl #ty_generics libecs::component::Component for #struct_name #impl_generics #where_clause {
-                fn id(&self) -> &libecs::Uuid {
-                    &self.comp_uuid
+                fn entity(&self) -> &libecs::Uuid {
+                    &self.__entity_id
                 }
 
                 fn system(&self) -> &libecs::Uuid {

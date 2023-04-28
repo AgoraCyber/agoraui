@@ -5,7 +5,7 @@ use uuid::Uuid;
 /// Component must implement this trait.
 pub trait Component {
     /// Returns the [`id`] of this component
-    fn id(&self) -> &Uuid;
+    fn entity(&self) -> &Uuid;
     /// Returns the bound system ID.
     fn system(&self) -> &Uuid;
     /// Convert self to `&dyn Any`
