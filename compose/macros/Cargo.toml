@@ -1,0 +1,20 @@
+[package]
+description = "Agora ui compose macros"
+documentation = "https://docs.rs/agoraui-compose-macros"
+edition.workspace = true
+license = "MIT"
+name = "agoraui-compose-macros"
+version.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+heck = "0.4"
+proc-macro2 = "^1"
+quote = "^1"
+syn = {version = "^1", features = ["full"]}
+
+[dev-dependencies]
+anyhow = {workspace = true}
+serde = {workspace = true}

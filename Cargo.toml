@@ -36,5 +36,6 @@ pretty_env_logger = "^0.4"
 # async 
 futures = "^0.3"
 
-libecs = {path = "./ecs", version = "^0.1"}
-libecs-derive = {path = "./ecs/derive", version = "^0.1"}
+#rust code generation
+proc-macro2 = "^1"
+quote = "^1"
