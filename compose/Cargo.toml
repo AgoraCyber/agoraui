@@ -10,3 +10,10 @@ version.workspace = true
 
 [dependencies]
 agoraui-compose-macros = {path = "./macros"}
+futures = {workspace = true}
+impl-trait-for-tuples = {workspace = true}
+log = {workspace = true}
+
+[dev-dependencies]
+async-std = {workspace = true}
+pretty_env_logger = {workspace = true}
