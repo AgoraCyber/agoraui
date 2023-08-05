@@ -57,7 +57,7 @@ struct _RawObservable<T> {
     consumers: usize,
 }
 
-impl<T> _RawObservable<T> {
+impl<T: Clone> _RawObservable<T> {
     fn set_value(&mut self, value: T) {
         assert!(self.consumers == 0, "call set_value when wakeup wakers");
 
@@ -75,11 +75,11 @@ impl<T> _RawObservable<T> {
         log::debug!("Total wakeup wakers({})", self.consumers);
     }
 
-    fn poll(&mut self, id: usize, waker: &Waker) -> Poll<()> {
+    fn poll(&mut self, id: usize, waker: &Waker) -> Poll<T> {
         if self.consumers > 0 {
             log::debug!("Wakeup one waker");
             self.consumers -= 1;
-            return Poll::Ready(());
+            return Poll::Ready(self.value.clone());
         }
 
         log::debug!("waker({}) register", id);
@@ -90,21 +90,31 @@ impl<T> _RawObservable<T> {
     }
 }
 
-impl<T> Observable<T> {
+impl<T: Clone> Observable<T> {
     /// Set new value and notify all waiting listeners.
     pub fn set_value(&self, value: T) {
         self.raw.borrow_mut().set_value(value);
     }
+
+    pub fn next(&self) -> ObservableNext<T> {
+        ObservableNext {
+            inner: self.clone(),
+        }
+    }
 }
 
-impl<T> Future for Observable<T> {
-    type Output = ();
+pub struct ObservableNext<T> {
+    inner: Observable<T>,
+}
+
+impl<T: Clone> Future for ObservableNext<T> {
+    type Output = T;
 
     fn poll(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        self.raw.borrow_mut().poll(self.id, cx.waker())
+        self.inner.raw.borrow_mut().poll(self.inner.id, cx.waker())
     }
 }
 
@@ -129,9 +139,7 @@ mod tests {
             ob_notifier.set_value(2);
         });
 
-        // ob.await;
-
-        join(ob.clone(), ob).await;
+        assert_eq!(join(ob.next(), ob.next()).await, (2, 2));
     }
 
     #[async_std::test]
@@ -143,9 +151,9 @@ mod tests {
 
         async_std::task::spawn_local(async move {
             sleep(Duration::from_secs(1)).await;
-            ob_notifier.set_value(2);
+            ob_notifier.set_value(3);
         });
 
-        ob.await;
+        assert_eq!(ob.next().await, 3);
     }
 }
