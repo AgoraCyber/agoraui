@@ -96,6 +96,7 @@ impl<T: Clone> Observable<T> {
         self.raw.borrow_mut().set_value(value);
     }
 
+    /// Create future [ObservableNext] to fetch next updated value of this [Observable] object.
     pub fn next(&self) -> ObservableNext<T> {
         ObservableNext {
             inner: self.clone(),
@@ -103,6 +104,7 @@ impl<T: Clone> Observable<T> {
     }
 }
 
+/// Future for [Observable] object next updated value.
 pub struct ObservableNext<T> {
     inner: Observable<T>,
 }
