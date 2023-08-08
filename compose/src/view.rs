@@ -7,6 +7,7 @@ pub trait View {
 
 pub enum AnyView {
     Stateless(Box<dyn StatelessView>),
+    Stateful(Box<dyn StatefulView>),
     Tuple(Box<dyn TupleView>),
 }
 

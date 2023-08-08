@@ -12,4 +12,22 @@ pub trait StatefulView {
 }
 
 /// State of [StatefulView]
-pub trait ViewState {}
+///
+/// When element insert/update, the framework will call
+/// [create_view_state](StatefulView::create_view_state) to create new [`State`](ViewState) object
+pub trait ViewState {
+    fn build(&mut self, context: &mut dyn BuildContext) -> AnyView;
+}
+
+#[allow(unused)]
+pub trait ViewStateLifecycle {
+    fn on_created(&mut self, context: &mut dyn BuildContext) {}
+
+    fn on_mounted(&mut self, context: &mut dyn BuildContext) {}
+
+    fn on_update(&mut self, context: &mut dyn BuildContext) {}
+
+    fn on_unmounted(&mut self, context: &mut dyn BuildContext) {}
+
+    fn on_disposed(&mut self, context: &mut dyn BuildContext) {}
+}
