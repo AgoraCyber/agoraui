@@ -15,7 +15,7 @@ pub fn derive_stateless(item: TokenStream) -> TokenStream {
     quote! {
 
         impl #impl_generics agoraui_compose::StatelessView for #name #ty_generics #where_clause {
-            fn build(&self,context: &mut dyn agoraui_compose::BuildContext) -> agoraui_compose::AnyView {
+            fn framework_build(&self,context: &mut dyn agoraui_compose::BuildContext) -> agoraui_compose::AnyView {
                 self.build(context).into_any_view()
             }
         }
@@ -23,7 +23,11 @@ pub fn derive_stateless(item: TokenStream) -> TokenStream {
         impl #impl_generics agoraui_compose::View for #name #ty_generics #where_clause {
             fn into_any_view(self) -> agoraui_compose::AnyView {
                 agoraui_compose::AnyView::Stateless(Box::new(self))
-             }
+            }
+
+            fn create_element(&self) -> Box<dyn agoraui_compose::Elemement> {
+                 unimplemented!()
+            }
         }
     }
     .into()
@@ -40,7 +44,7 @@ pub fn derive_stateful(item: TokenStream) -> TokenStream {
     quote! {
 
         impl #impl_generics agoraui_compose::StatefulView for #name #ty_generics #where_clause {
-             fn create_view_state(&self) -> Box<dyn agoraui_compose::ViewState> {
+             fn framework_create_view_state(&self) -> Box<dyn agoraui_compose::ViewState> {
                 Box::new(self.create_view_state())
             }
         }
@@ -48,7 +52,11 @@ pub fn derive_stateful(item: TokenStream) -> TokenStream {
         impl #impl_generics agoraui_compose::View for #name #ty_generics #where_clause {
             fn into_any_view(self) -> agoraui_compose::AnyView {
                 agoraui_compose::AnyView::Stateful(Box::new(self))
-             }
+            }
+
+            fn create_element(&self) -> Box<dyn agoraui_compose::Elemement> {
+                 unimplemented!()
+            }
         }
     }
     .into()
@@ -65,7 +73,7 @@ pub fn derive_state(item: TokenStream) -> TokenStream {
     quote! {
 
        impl #impl_generics agoraui_compose::ViewState for #name #ty_generics #where_clause {
-            fn build(&mut self,context: &mut dyn agoraui_compose::BuildContext) -> agoraui_compose::AnyView {
+            fn framework_build(&mut self,context: &mut dyn agoraui_compose::BuildContext) -> agoraui_compose::AnyView {
                 self.build(context).into_any_view()
             }
         }
