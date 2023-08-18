@@ -3,37 +3,55 @@ use std::{
     ptr::NonNull,
     rc::Rc,
 };
+
+use crate::element::Element;
+
 /// Widget must implement this trait to convert self to [`Element`]
 pub trait ToElement {
-    fn to_element(&self, view: AnyView) -> ();
+    fn to_element(&self, view: View) -> Element;
 }
 
-pub trait ToAnyView {
-    fn to_any_view(self) -> AnyView;
+pub trait IntoView {
+    fn into_view(self) -> View;
 }
 
-pub trait CompositeView: ToElement + ToAnyView {
-    fn framework_build(&self) -> AnyView;
+/// View with local state must implement this trait
+pub trait CompositeWithStateView: ToElement + IntoView {
+    fn create_state() -> Box<dyn State>;
 }
 
-pub trait RenderObjectView: ToElement + ToAnyView {}
+pub trait State {
+    fn framework_build(&self) -> View;
+}
 
-impl<V: RenderObjectView> From<V> for AnyView {
+pub trait CompositeView: ToElement + IntoView {
+    fn framework_build(&self) -> View;
+}
+
+pub trait RenderObjectView: ToElement + IntoView {}
+
+impl<V: RenderObjectView> From<V> for View {
     fn from(value: V) -> Self {
-        AnyView::from_render_object(value)
+        View::from_render_object(value)
     }
 }
 
 #[repr(C)]
 struct ViewVTable {
     /// Create new associated view element.
-    to_element: unsafe fn(object: Ref<'_, NonNull<ViewVTable>>, view: AnyView),
+    to_element: unsafe fn(object: Ref<'_, NonNull<ViewVTable>>, view: View),
 }
 
 #[repr(C)]
 struct CompositeViewVTable {
     view: ViewVTable,
-    build: unsafe fn(object: Ref<'_, NonNull<ViewVTable>>) -> AnyView,
+    build: unsafe fn(object: Ref<'_, NonNull<ViewVTable>>) -> View,
+}
+
+#[repr(C)]
+struct CompositeWithStateViewVTable {
+    view: ViewVTable,
+    create_state: unsafe fn(object: Ref<'_, NonNull<ViewVTable>>) -> Box<dyn State>,
 }
 
 #[repr(C)]
@@ -62,16 +80,14 @@ impl CompositeViewVTable {
     }
 }
 
-unsafe fn composite_view_build<State: CompositeView>(
-    object: Ref<'_, NonNull<ViewVTable>>,
-) -> AnyView {
+unsafe fn composite_view_build<State: CompositeView>(object: Ref<'_, NonNull<ViewVTable>>) -> View {
     let v = object.cast::<CompositeRawView<State>>();
 
     v.as_ref().state.framework_build()
 }
 unsafe fn composite_view_to_element<State: CompositeView>(
     _object: Ref<'_, NonNull<ViewVTable>>,
-    view: AnyView,
+    view: View,
 ) {
     let v = _object.cast::<CompositeRawView<State>>();
 
@@ -80,7 +96,7 @@ unsafe fn composite_view_to_element<State: CompositeView>(
 
 unsafe fn render_object_view_to_element<State: RenderObjectView>(
     _object: Ref<'_, NonNull<ViewVTable>>,
-    view: AnyView,
+    view: View,
 ) {
     let v = _object.cast::<RenderObjectRawView<State>>();
 
@@ -101,15 +117,16 @@ struct CompositeRawView<State: CompositeView> {
 
 /// Polymorphic erase view type
 #[derive(Debug, Clone)]
-pub enum AnyView {
+pub enum View {
     Empty,
     Composite(AnyCompositeView),
+    CompositeWithState(AnyCompositeWithStateView),
     RenderObject(AnyRenderObjectView),
 }
 
-impl AnyView {
+impl View {
     /// Create erased type view from [`CompositeView`].
-    pub fn from_composite<State: CompositeView>(state: State) -> AnyView {
+    pub fn from_composite<State: CompositeView>(state: State) -> View {
         let boxed = Box::new(CompositeRawView::<State> {
             vtable: CompositeViewVTable::new::<State>(),
             state,
@@ -117,12 +134,12 @@ impl AnyView {
 
         let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(boxed) as *mut ViewVTable) };
 
-        AnyView::Composite(AnyCompositeView {
+        View::Composite(AnyCompositeView {
             raw_view: Rc::new(RefCell::new(ptr)),
         })
     }
     /// Create erased type view from [`RenderObjectView`].
-    pub fn from_render_object<State: RenderObjectView>(state: State) -> AnyView {
+    pub fn from_render_object<State: RenderObjectView>(state: State) -> View {
         let boxed = Box::new(RenderObjectRawView::<State> {
             vtable: RenderObjectViewVTable::new::<State>(),
             state,
@@ -130,7 +147,7 @@ impl AnyView {
 
         let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(boxed) as *mut ViewVTable) };
 
-        AnyView::RenderObject(AnyRenderObjectView {
+        View::RenderObject(AnyRenderObjectView {
             raw_view: Rc::new(RefCell::new(ptr)),
         })
     }
@@ -138,23 +155,24 @@ impl AnyView {
     /// Convert [`AnyView`] to [`Element`]
     pub fn to_element(&self) {
         match self {
-            AnyView::Composite(view) => view.to_element(),
-            AnyView::RenderObject(view) => view.to_element(),
-            AnyView::Empty => {}
+            View::Composite(view) => view.to_element(),
+            View::CompositeWithState(view) => view.to_element(),
+            View::RenderObject(view) => view.to_element(),
+            View::Empty => {}
         }
     }
 }
 
-impl ToAnyView for AnyView {
-    fn to_any_view(self) -> AnyView {
+impl IntoView for View {
+    fn into_view(self) -> View {
         // [`AnyView`] just return self.
         self
     }
 }
 
-impl ToAnyView for () {
-    fn to_any_view(self) -> AnyView {
-        return AnyView::Empty;
+impl IntoView for () {
+    fn into_view(self) -> View {
+        return View::Empty;
     }
 }
 
@@ -168,12 +186,41 @@ impl AnyCompositeView {
         unsafe {
             let to_element = self.raw_view.borrow().as_ref().to_element;
 
-            to_element(self.raw_view.borrow(), AnyView::Composite(self.clone()));
+            to_element(self.raw_view.borrow(), View::Composite(self.clone()));
         }
     }
 
     /// Build composite view
-    pub fn build(&self) -> AnyView {
+    pub fn build(&self) -> View {
+        unsafe {
+            let composite_view = self.raw_view.borrow().cast::<CompositeViewVTable>();
+
+            let build = composite_view.as_ref().build;
+
+            build(self.raw_view.borrow())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AnyCompositeWithStateView {
+    raw_view: Rc<RefCell<NonNull<ViewVTable>>>,
+}
+
+impl AnyCompositeWithStateView {
+    pub fn to_element(&self) {
+        unsafe {
+            let to_element = self.raw_view.borrow().as_ref().to_element;
+
+            to_element(
+                self.raw_view.borrow(),
+                View::CompositeWithState(self.clone()),
+            );
+        }
+    }
+
+    /// Build composite view
+    pub fn create_state(&self) -> Box<dyn State> {
         unsafe {
             let composite_view = self.raw_view.borrow().cast::<CompositeViewVTable>();
 
@@ -194,7 +241,7 @@ impl AnyRenderObjectView {
         unsafe {
             let to_element = self.raw_view.borrow().as_ref().to_element;
 
-            to_element(self.raw_view.borrow(), AnyView::RenderObject(self.clone()));
+            to_element(self.raw_view.borrow(), View::RenderObject(self.clone()));
         }
     }
 }
@@ -205,7 +252,7 @@ macro_rules! view_list {
        Vec::new()
     );
     ($($x:expr),+ $(,)?) => (
-        vec![$($x.to_any_view()),+]
+        vec![$($x.into_view()),+]
     );
 }
 
@@ -214,7 +261,7 @@ mod tsts {
 
     use std::{cell::RefCell, rc::Rc};
 
-    use crate::{AnyView, CompositeView, ToAnyView, ToElement};
+    use super::*;
 
     #[derive(Default)]
     struct Mock {
@@ -222,25 +269,27 @@ mod tsts {
     }
 
     impl CompositeView for Mock {
-        fn framework_build(&self) -> AnyView {
+        fn framework_build(&self) -> View {
             *self.count.borrow_mut() += 1;
 
             Mock {
                 ..Default::default()
             }
-            .to_any_view()
+            .into_view()
         }
     }
 
     impl ToElement for Mock {
-        fn to_element(&self, _view: crate::AnyView) -> () {
+        fn to_element(&self, _view: View) -> Element {
             *self.count.borrow_mut() += 1;
+
+            Element::Empty
         }
     }
 
-    impl ToAnyView for Mock {
-        fn to_any_view(self) -> crate::AnyView {
-            AnyView::from_composite(self)
+    impl IntoView for Mock {
+        fn into_view(self) -> crate::View {
+            View::from_composite(self)
         }
     }
 
@@ -250,7 +299,7 @@ mod tsts {
         let mock = Mock {
             count: count.clone(),
         }
-        .to_any_view();
+        .into_view();
 
         mock.to_element();
 
@@ -261,7 +310,7 @@ mod tsts {
 
         assert_eq!(*count.borrow(), 2);
 
-        if let AnyView::Composite(view) = &mock {
+        if let View::Composite(view) = &mock {
             view.build();
         }
 

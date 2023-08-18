@@ -15,19 +15,20 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
     quote! {
 
         impl #impl_generics agoraui_compose::CompositeView for #name #ty_generics #where_clause {
-            fn framework_build(&self) -> agoraui_compose::AnyView {
-                self.build().to_any_view()
+            fn framework_build(&self) -> agoraui_compose::View {
+                self.build().into_view()
             }
         }
 
         impl #impl_generics agoraui_compose::ToElement for #name #ty_generics #where_clause {
-            fn to_element(&self, _view: agoraui_compose::AnyView) -> () {
+            fn to_element(&self, _view: agoraui_compose::View) -> agoraui_compose::Element {
+                agoraui_compose::Element::Empty
             }
         }
 
-        impl #impl_generics agoraui_compose::ToAnyView for #name #ty_generics #where_clause {
-            fn to_any_view(self) ->  agoraui_compose::AnyView {
-                agoraui_compose::AnyView::from_composite(self)
+        impl #impl_generics agoraui_compose::IntoView for #name #ty_generics #where_clause {
+            fn into_view(self) ->  agoraui_compose::View {
+                agoraui_compose::View::from_composite(self)
             }
         }
     }

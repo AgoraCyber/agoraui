@@ -3,11 +3,11 @@ use agoraui_compose::*;
 #[derive(Composite)]
 #[allow(unused)]
 struct Column {
-    children: Vec<AnyView>,
+    children: Vec<View>,
 }
 
 impl Column {
-    fn build(&self) -> impl ToAnyView {
+    fn build(&self) -> impl IntoView {
         let i = 0;
         Column {
             children: view_list![
@@ -15,9 +15,9 @@ impl Column {
                     Text {
                         label: "Hello0".to_string(),
                     }
-                    .to_any_view()
+                    .into_view()
                 } else {
-                    ().to_any_view()
+                    ().into_view()
                 },
                 Text {
                     label: "Hello".to_string(),
@@ -34,7 +34,7 @@ struct Text {
 }
 
 impl Text {
-    fn build(&self) -> impl ToAnyView {
+    fn build(&self) -> impl IntoView {
         MockRenderObject {}
     }
 }
@@ -44,20 +44,20 @@ struct MockRenderObject {}
 impl RenderObjectView for MockRenderObject {}
 
 impl ToElement for MockRenderObject {
-    fn to_element(&self, _view: AnyView) -> () {
+    fn to_element(&self, _view: View) -> Element {
         todo!()
     }
 }
 
-impl ToAnyView for MockRenderObject {
-    fn to_any_view(self) -> AnyView {
-        AnyView::from_render_object(self)
+impl IntoView for MockRenderObject {
+    fn into_view(self) -> View {
+        View::from_render_object(self)
     }
 }
 
 #[test]
 fn test_column() {
-    let col = Column { children: vec![] }.to_any_view();
+    let col = Column { children: vec![] }.into_view();
 
     col.to_element();
 }
