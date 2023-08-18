@@ -1,54 +1,64 @@
 use agoraui_compose::*;
 
+#[derive(Composite)]
 #[allow(unused)]
-#[derive(Stateless, Clone)]
-struct Label {
-    pub text: String,
+struct Column {
+    children: Vec<AnyView>,
 }
 
-impl Label {
-    fn build(&self, _context: &mut dyn BuildContext) -> impl View {}
-}
-
-#[derive(Stateful, Clone)]
-struct TextField {}
-
-impl TextField {
-    fn create_view_state(&self) -> impl ViewState {
-        TextFieldState {
-            _widget: self.clone(),
+impl Column {
+    fn build(&self) -> impl ToAnyView {
+        let i = 0;
+        Column {
+            children: view_list![
+                if i > 10 {
+                    Text {
+                        label: "Hello0".to_string(),
+                    }
+                } else {
+                    Text {
+                        label: "Hello10".to_string(),
+                    }
+                },
+                Text {
+                    label: "Hello".to_string(),
+                },
+            ],
         }
     }
 }
 
-#[derive(State)]
-struct TextFieldState {
-    _widget: TextField,
+#[derive(Composite)]
+#[allow(unused)]
+struct Text {
+    pub label: String,
 }
 
-impl TextFieldState {
-    fn build(&mut self, _context: &mut dyn BuildContext) -> impl View {}
+impl Text {
+    fn build(&self) -> impl ToAnyView {
+        MockRenderObject {}
+    }
 }
 
-impl ViewStateLifecycle for TextFieldState {}
+struct MockRenderObject {}
 
-#[derive(Stateless)]
-struct AppView {}
+impl RenderObjectView for MockRenderObject {}
 
-impl AppView {
-    fn build(&self, _context: &mut dyn BuildContext) -> impl View {
-        (
-            Label {
-                text: "Hello".to_string(),
-            },
-            TextField {},
-        )
+impl ToElement for MockRenderObject {
+    fn to_element(&self, _view: AnyView) -> () {
+        todo!()
+    }
+}
+
+impl ToAnyView for MockRenderObject {
+    fn to_any_view(self) -> AnyView {
+        AnyView::from_render_object(self)
     }
 }
 
 #[test]
-fn test_create_view() {
-    let view = AppView {};
+fn test_column() {
+    let col = Column { children: vec![] }.to_any_view();
 
-    let element = view.create_element();
+    col.to_element();
 }
