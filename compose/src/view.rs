@@ -3,7 +3,7 @@ use std::{
     ptr::NonNull,
     rc::Rc,
 };
-
+/// Widget must implement this trait to convert self to [`Element`]
 pub trait ToElement {
     fn to_element(&self, view: AnyView) -> ();
 }
@@ -102,6 +102,7 @@ struct CompositeRawView<State: CompositeView> {
 /// Polymorphic erase view type
 #[derive(Debug, Clone)]
 pub enum AnyView {
+    Empty,
     Composite(AnyCompositeView),
     RenderObject(AnyRenderObjectView),
 }
@@ -139,7 +140,21 @@ impl AnyView {
         match self {
             AnyView::Composite(view) => view.to_element(),
             AnyView::RenderObject(view) => view.to_element(),
+            AnyView::Empty => {}
         }
+    }
+}
+
+impl ToAnyView for AnyView {
+    fn to_any_view(self) -> AnyView {
+        // [`AnyView`] just return self.
+        self
+    }
+}
+
+impl ToAnyView for () {
+    fn to_any_view(self) -> AnyView {
+        return AnyView::Empty;
     }
 }
 

@@ -15,10 +15,9 @@ impl Column {
                     Text {
                         label: "Hello0".to_string(),
                     }
+                    .to_any_view()
                 } else {
-                    Text {
-                        label: "Hello10".to_string(),
-                    }
+                    ().to_any_view()
                 },
                 Text {
                     label: "Hello".to_string(),
