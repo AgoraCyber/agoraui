@@ -1,8 +1,4 @@
-use std::{
-    cell::{Ref, RefCell},
-    ptr::NonNull,
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::element::Element;
 
@@ -17,7 +13,7 @@ pub trait IntoView {
 
 /// View with local state must implement this trait
 pub trait CompositeWithStateView: ToElement + IntoView {
-    fn create_state() -> Box<dyn State>;
+    fn framework_create_state(&self) -> Box<dyn State>;
 }
 
 pub trait State {
@@ -30,93 +26,8 @@ pub trait CompositeView: ToElement + IntoView {
 
 pub trait RenderObjectView: ToElement + IntoView {}
 
-impl<V: RenderObjectView> From<V> for View {
-    fn from(value: V) -> Self {
-        View::from_render_object(value)
-    }
-}
-
-#[repr(C)]
-struct ViewVTable {
-    /// Create new associated view element.
-    to_element: unsafe fn(object: Ref<'_, NonNull<ViewVTable>>, view: View),
-}
-
-#[repr(C)]
-struct CompositeViewVTable {
-    view: ViewVTable,
-    build: unsafe fn(object: Ref<'_, NonNull<ViewVTable>>) -> View,
-}
-
-#[repr(C)]
-struct CompositeWithStateViewVTable {
-    view: ViewVTable,
-    create_state: unsafe fn(object: Ref<'_, NonNull<ViewVTable>>) -> Box<dyn State>,
-}
-
-#[repr(C)]
-struct RenderObjectViewVTable {
-    view: ViewVTable,
-}
-
-impl RenderObjectViewVTable {
-    fn new<State: RenderObjectView>() -> Self {
-        RenderObjectViewVTable {
-            view: ViewVTable {
-                to_element: render_object_view_to_element::<State>,
-            },
-        }
-    }
-}
-impl CompositeViewVTable {
-    fn new<State: CompositeView>() -> Self {
-        CompositeViewVTable {
-            view: ViewVTable {
-                to_element: composite_view_to_element::<State>,
-            },
-
-            build: composite_view_build::<State>,
-        }
-    }
-}
-
-unsafe fn composite_view_build<State: CompositeView>(object: Ref<'_, NonNull<ViewVTable>>) -> View {
-    let v = object.cast::<CompositeRawView<State>>();
-
-    v.as_ref().state.framework_build()
-}
-unsafe fn composite_view_to_element<State: CompositeView>(
-    _object: Ref<'_, NonNull<ViewVTable>>,
-    view: View,
-) {
-    let v = _object.cast::<CompositeRawView<State>>();
-
-    v.as_ref().state.to_element(view);
-}
-
-unsafe fn render_object_view_to_element<State: RenderObjectView>(
-    _object: Ref<'_, NonNull<ViewVTable>>,
-    view: View,
-) {
-    let v = _object.cast::<RenderObjectRawView<State>>();
-
-    v.as_ref().state.to_element(view);
-}
-
-#[repr(C)]
-struct RenderObjectRawView<State: RenderObjectView> {
-    vtable: RenderObjectViewVTable,
-    state: State,
-}
-
-#[repr(C)]
-struct CompositeRawView<State: CompositeView> {
-    vtable: CompositeViewVTable,
-    state: State,
-}
-
 /// Polymorphic erase view type
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum View {
     Empty,
     Composite(AnyCompositeView),
@@ -126,39 +37,33 @@ pub enum View {
 
 impl View {
     /// Create erased type view from [`CompositeView`].
-    pub fn from_composite<State: CompositeView>(state: State) -> View {
-        let boxed = Box::new(CompositeRawView::<State> {
-            vtable: CompositeViewVTable::new::<State>(),
-            state,
-        });
-
-        let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(boxed) as *mut ViewVTable) };
-
+    pub fn from_composite<State: CompositeView + 'static>(state: State) -> View {
         View::Composite(AnyCompositeView {
-            raw_view: Rc::new(RefCell::new(ptr)),
+            raw_view: Rc::new(RefCell::new(Box::new(state))),
+        })
+    }
+
+    pub fn from_composite_with_state<State: CompositeWithStateView + 'static>(
+        state: State,
+    ) -> View {
+        View::CompositeWithState(AnyCompositeWithStateView {
+            raw_view: Rc::new(RefCell::new(Box::new(state))),
         })
     }
     /// Create erased type view from [`RenderObjectView`].
-    pub fn from_render_object<State: RenderObjectView>(state: State) -> View {
-        let boxed = Box::new(RenderObjectRawView::<State> {
-            vtable: RenderObjectViewVTable::new::<State>(),
-            state,
-        });
-
-        let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(boxed) as *mut ViewVTable) };
-
+    pub fn from_render_object<State: RenderObjectView + 'static>(state: State) -> View {
         View::RenderObject(AnyRenderObjectView {
-            raw_view: Rc::new(RefCell::new(ptr)),
+            raw_view: Rc::new(RefCell::new(Box::new(state))),
         })
     }
 
     /// Convert [`AnyView`] to [`Element`]
-    pub fn to_element(&self) {
+    pub fn to_element(&self) -> Option<Element> {
         match self {
-            View::Composite(view) => view.to_element(),
-            View::CompositeWithState(view) => view.to_element(),
-            View::RenderObject(view) => view.to_element(),
-            View::Empty => {}
+            View::Composite(view) => Some(view.to_element()),
+            View::CompositeWithState(view) => Some(view.to_element()),
+            View::RenderObject(view) => Some(view.to_element()),
+            View::Empty => None,
         }
     }
 }
@@ -176,73 +81,52 @@ impl IntoView for () {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AnyCompositeView {
-    raw_view: Rc<RefCell<NonNull<ViewVTable>>>,
+    raw_view: Rc<RefCell<Box<dyn CompositeView + 'static>>>,
 }
 
 impl AnyCompositeView {
-    pub fn to_element(&self) {
-        unsafe {
-            let to_element = self.raw_view.borrow().as_ref().to_element;
-
-            to_element(self.raw_view.borrow(), View::Composite(self.clone()));
-        }
+    pub fn to_element(&self) -> Element {
+        self.raw_view
+            .borrow()
+            .to_element(View::Composite(self.clone()))
     }
 
     /// Build composite view
     pub fn build(&self) -> View {
-        unsafe {
-            let composite_view = self.raw_view.borrow().cast::<CompositeViewVTable>();
-
-            let build = composite_view.as_ref().build;
-
-            build(self.raw_view.borrow())
-        }
+        self.raw_view.borrow().framework_build()
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AnyCompositeWithStateView {
-    raw_view: Rc<RefCell<NonNull<ViewVTable>>>,
+    raw_view: Rc<RefCell<Box<dyn CompositeWithStateView + 'static>>>,
 }
 
 impl AnyCompositeWithStateView {
-    pub fn to_element(&self) {
-        unsafe {
-            let to_element = self.raw_view.borrow().as_ref().to_element;
-
-            to_element(
-                self.raw_view.borrow(),
-                View::CompositeWithState(self.clone()),
-            );
-        }
+    pub fn to_element(&self) -> Element {
+        self.raw_view
+            .borrow()
+            .to_element(View::CompositeWithState(self.clone()))
     }
 
     /// Build composite view
     pub fn create_state(&self) -> Box<dyn State> {
-        unsafe {
-            let composite_view = self.raw_view.borrow().cast::<CompositeViewVTable>();
-
-            let build = composite_view.as_ref().build;
-
-            build(self.raw_view.borrow())
-        }
+        self.raw_view.borrow().framework_create_state()
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AnyRenderObjectView {
-    raw_view: Rc<RefCell<NonNull<ViewVTable>>>,
+    raw_view: Rc<RefCell<Box<dyn RenderObjectView + 'static>>>,
 }
 
 impl AnyRenderObjectView {
-    pub fn to_element(&self) {
-        unsafe {
-            let to_element = self.raw_view.borrow().as_ref().to_element;
-
-            to_element(self.raw_view.borrow(), View::RenderObject(self.clone()));
-        }
+    pub fn to_element(&self) -> Element {
+        self.raw_view
+            .borrow()
+            .to_element(View::RenderObject(self.clone()))
     }
 }
 

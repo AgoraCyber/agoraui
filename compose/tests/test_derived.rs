@@ -27,13 +27,22 @@ impl Column {
     }
 }
 
-#[derive(Composite)]
+#[derive(CompositeWithState)]
 #[allow(unused)]
 struct Text {
     pub label: String,
 }
 
 impl Text {
+    fn create_state(&self) -> TextState {
+        TextState {}
+    }
+}
+
+#[derive(State)]
+struct TextState {}
+
+impl TextState {
     fn build(&self) -> impl IntoView {
         MockRenderObject {}
     }
