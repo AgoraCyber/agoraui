@@ -1,6 +1,6 @@
 [package]
-description = "Agora ui virtual view components"
-documentation = "https://docs.rs/web3ui-compose"
+description = "Agora ui reactive framework for rust"
+documentation = "https://docs.rs/agoraui-compose"
 edition.workspace = true
 license = "MIT"
 name = "agoraui-compose"

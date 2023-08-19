@@ -12,7 +12,7 @@ pub trait IntoView {
 }
 
 /// View with local state must implement this trait
-pub trait CompositeWithStateView: ToElement + IntoView {
+pub trait ICompositeWithStateView: ToElement + IntoView {
     fn framework_create_state(&self) -> Box<dyn State>;
 }
 
@@ -20,39 +20,39 @@ pub trait State {
     fn framework_build(&self) -> View;
 }
 
-pub trait CompositeView: ToElement + IntoView {
+pub trait ICompositeView: ToElement + IntoView {
     fn framework_build(&self) -> View;
 }
 
-pub trait RenderObjectView: ToElement + IntoView {}
+pub trait IRenderObjectView: ToElement + IntoView {}
 
 /// Polymorphic erase view type
 #[derive(Clone)]
 pub enum View {
     Empty,
-    Composite(AnyCompositeView),
-    CompositeWithState(AnyCompositeWithStateView),
-    RenderObject(AnyRenderObjectView),
+    Composite(CompositeView),
+    CompositeWithState(CompositeWithStateView),
+    RenderObject(RenderObjectView),
 }
 
 impl View {
     /// Create erased type view from [`CompositeView`].
-    pub fn from_composite<State: CompositeView + 'static>(state: State) -> View {
-        View::Composite(AnyCompositeView {
+    pub fn from_composite<State: ICompositeView + 'static>(state: State) -> View {
+        View::Composite(CompositeView {
             raw_view: Rc::new(RefCell::new(Box::new(state))),
         })
     }
 
-    pub fn from_composite_with_state<State: CompositeWithStateView + 'static>(
+    pub fn from_composite_with_state<State: ICompositeWithStateView + 'static>(
         state: State,
     ) -> View {
-        View::CompositeWithState(AnyCompositeWithStateView {
+        View::CompositeWithState(CompositeWithStateView {
             raw_view: Rc::new(RefCell::new(Box::new(state))),
         })
     }
     /// Create erased type view from [`RenderObjectView`].
-    pub fn from_render_object<State: RenderObjectView + 'static>(state: State) -> View {
-        View::RenderObject(AnyRenderObjectView {
+    pub fn from_render_object<State: IRenderObjectView + 'static>(state: State) -> View {
+        View::RenderObject(RenderObjectView {
             raw_view: Rc::new(RefCell::new(Box::new(state))),
         })
     }
@@ -82,11 +82,11 @@ impl IntoView for () {
 }
 
 #[derive(Clone)]
-pub struct AnyCompositeView {
-    raw_view: Rc<RefCell<Box<dyn CompositeView + 'static>>>,
+pub struct CompositeView {
+    raw_view: Rc<RefCell<Box<dyn ICompositeView + 'static>>>,
 }
 
-impl AnyCompositeView {
+impl CompositeView {
     pub fn to_element(&self) -> Element {
         self.raw_view
             .borrow()
@@ -100,11 +100,11 @@ impl AnyCompositeView {
 }
 
 #[derive(Clone)]
-pub struct AnyCompositeWithStateView {
-    raw_view: Rc<RefCell<Box<dyn CompositeWithStateView + 'static>>>,
+pub struct CompositeWithStateView {
+    raw_view: Rc<RefCell<Box<dyn ICompositeWithStateView + 'static>>>,
 }
 
-impl AnyCompositeWithStateView {
+impl CompositeWithStateView {
     pub fn to_element(&self) -> Element {
         self.raw_view
             .borrow()
@@ -118,11 +118,11 @@ impl AnyCompositeWithStateView {
 }
 
 #[derive(Clone)]
-pub struct AnyRenderObjectView {
-    raw_view: Rc<RefCell<Box<dyn RenderObjectView + 'static>>>,
+pub struct RenderObjectView {
+    raw_view: Rc<RefCell<Box<dyn IRenderObjectView + 'static>>>,
 }
 
-impl AnyRenderObjectView {
+impl RenderObjectView {
     pub fn to_element(&self) -> Element {
         self.raw_view
             .borrow()
@@ -152,7 +152,7 @@ mod tsts {
         count: Rc<RefCell<i32>>,
     }
 
-    impl CompositeView for Mock {
+    impl ICompositeView for Mock {
         fn framework_build(&self) -> View {
             *self.count.borrow_mut() += 1;
 

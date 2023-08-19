@@ -50,7 +50,7 @@ impl TextState {
 
 struct MockRenderObject {}
 
-impl RenderObjectView for MockRenderObject {}
+impl IRenderObjectView for MockRenderObject {}
 
 impl ToElement for MockRenderObject {
     fn to_element(&self, _view: View) -> Element {
@@ -65,8 +65,10 @@ impl IntoView for MockRenderObject {
 }
 
 #[test]
-fn test_column() {
+fn test_element_mount() {
     let col = Column { children: vec![] }.into_view();
 
-    col.to_element();
+    let mut element = col.to_element().unwrap();
+
+    element.mount(None)
 }

@@ -14,15 +14,15 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
 
     quote! {
 
-        impl #impl_generics agoraui_compose::CompositeView for #name #ty_generics #where_clause {
+        impl #impl_generics agoraui_compose::ICompositeView for #name #ty_generics #where_clause {
             fn framework_build(&self) -> agoraui_compose::View {
                 self.build().into_view()
             }
         }
 
         impl #impl_generics agoraui_compose::ToElement for #name #ty_generics #where_clause {
-            fn to_element(&self, _view: agoraui_compose::View) -> agoraui_compose::Element {
-                agoraui_compose::Element::Empty
+            fn to_element(&self, view: agoraui_compose::View) -> agoraui_compose::Element {
+                agoraui_compose::CompositeElement::new(view).into()
             }
         }
 
@@ -64,7 +64,7 @@ pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
 
     quote! {
 
-        impl #impl_generics agoraui_compose::CompositeWithStateView for #name #ty_generics #where_clause {
+        impl #impl_generics agoraui_compose::ICompositeWithStateView for #name #ty_generics #where_clause {
             fn framework_create_state(&self) -> Box<dyn agoraui_compose::State> {
                 Box::new(self.create_state())
             }
