@@ -27,7 +27,7 @@ pub trait ICompositeView: ToElement + IntoView {
 pub trait IRenderObjectView: ToElement + IntoView {}
 
 /// Polymorphic erase view type
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum View {
     Empty,
     Composite(CompositeView),
@@ -81,7 +81,7 @@ impl IntoView for () {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct CompositeView {
     raw_view: Rc<RefCell<Box<dyn ICompositeView + 'static>>>,
 }
@@ -99,7 +99,7 @@ impl CompositeView {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct CompositeWithStateView {
     raw_view: Rc<RefCell<Box<dyn ICompositeWithStateView + 'static>>>,
 }
@@ -117,7 +117,7 @@ impl CompositeWithStateView {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct RenderObjectView {
     raw_view: Rc<RefCell<Box<dyn IRenderObjectView + 'static>>>,
 }
