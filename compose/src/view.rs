@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{any::Any, cell::RefCell, fmt::Debug, rc::Rc};
 
 use crate::element::Element;
 
@@ -11,8 +11,20 @@ pub trait IntoView {
     fn into_view(self) -> View;
 }
 
+pub trait ToAny {
+    fn to_any(&self) -> &dyn Any;
+}
+
+pub trait AnyEq {
+    fn eq(&self, other: &dyn Any) -> bool;
+}
+
+pub trait ToKey {
+    fn to_key(&self) -> &str;
+}
+
 /// View with local state must implement this trait
-pub trait ICompositeWithStateView: ToElement + IntoView {
+pub trait ICompositeWithStateView: ToElement + IntoView + ToAny + AnyEq + Debug {
     fn framework_create_state(&self) -> Box<dyn State>;
 }
 
@@ -20,14 +32,14 @@ pub trait State {
     fn framework_build(&self) -> View;
 }
 
-pub trait ICompositeView: ToElement + IntoView {
+pub trait ICompositeView: ToElement + IntoView + ToAny + AnyEq + Debug {
     fn framework_build(&self) -> View;
 }
 
-pub trait IRenderObjectView: ToElement + IntoView {}
+pub trait IRenderObjectView: ToElement + IntoView + ToAny + AnyEq + Debug {}
 
 /// Polymorphic erase view type
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum View {
     Empty,
     Composite(CompositeView),
@@ -37,22 +49,29 @@ pub enum View {
 
 impl View {
     /// Create erased type view from [`CompositeView`].
-    pub fn from_composite<State: ICompositeView + 'static>(state: State) -> View {
+    pub fn from_composite<State: ICompositeView + 'static>(id: String, state: State) -> View {
         View::Composite(CompositeView {
+            id,
             raw_view: Rc::new(RefCell::new(Box::new(state))),
         })
     }
 
     pub fn from_composite_with_state<State: ICompositeWithStateView + 'static>(
+        id: String,
         state: State,
     ) -> View {
         View::CompositeWithState(CompositeWithStateView {
+            id,
             raw_view: Rc::new(RefCell::new(Box::new(state))),
         })
     }
     /// Create erased type view from [`RenderObjectView`].
-    pub fn from_render_object<State: IRenderObjectView + 'static>(state: State) -> View {
+    pub fn from_render_object<State: IRenderObjectView + 'static>(
+        id: String,
+        state: State,
+    ) -> View {
         View::RenderObject(RenderObjectView {
+            id,
             raw_view: Rc::new(RefCell::new(Box::new(state))),
         })
     }
@@ -63,6 +82,15 @@ impl View {
             View::Composite(view) => Some(view.to_element()),
             View::CompositeWithState(view) => Some(view.to_element()),
             View::RenderObject(view) => Some(view.to_element()),
+            View::Empty => None,
+        }
+    }
+
+    pub fn to_key(&self) -> Option<&str> {
+        match self {
+            View::Composite(view) => Some(&view.id),
+            View::CompositeWithState(view) => Some(&view.id),
+            View::RenderObject(view) => Some(&view.id),
             View::Empty => None,
         }
     }
@@ -81,8 +109,9 @@ impl IntoView for () {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct CompositeView {
+    id: String,
     raw_view: Rc<RefCell<Box<dyn ICompositeView + 'static>>>,
 }
 
@@ -99,8 +128,18 @@ impl CompositeView {
     }
 }
 
-#[derive(Clone, PartialEq)]
+impl PartialEq for CompositeView {
+    fn eq(&self, other: &Self) -> bool {
+        let lhs = self.raw_view.borrow();
+        let rhs = other.raw_view.borrow();
+
+        lhs.to_any().type_id() == rhs.to_any().type_id() && self.raw_view.borrow().eq(rhs.to_any())
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct CompositeWithStateView {
+    id: String,
     raw_view: Rc<RefCell<Box<dyn ICompositeWithStateView + 'static>>>,
 }
 
@@ -117,8 +156,18 @@ impl CompositeWithStateView {
     }
 }
 
-#[derive(Clone, PartialEq)]
+impl PartialEq for CompositeWithStateView {
+    fn eq(&self, other: &Self) -> bool {
+        let lhs = self.raw_view.borrow();
+        let rhs = other.raw_view.borrow();
+
+        lhs.to_any().type_id() == rhs.to_any().type_id() && self.raw_view.borrow().eq(rhs.to_any())
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct RenderObjectView {
+    id: String,
     raw_view: Rc<RefCell<Box<dyn IRenderObjectView + 'static>>>,
 }
 
@@ -127,6 +176,15 @@ impl RenderObjectView {
         self.raw_view
             .borrow()
             .to_element(View::RenderObject(self.clone()))
+    }
+}
+
+impl PartialEq for RenderObjectView {
+    fn eq(&self, other: &Self) -> bool {
+        let lhs = self.raw_view.borrow();
+        let rhs = other.raw_view.borrow();
+
+        lhs.to_any().type_id() == rhs.to_any().type_id() && self.raw_view.borrow().eq(rhs.to_any())
     }
 }
 
@@ -147,7 +205,7 @@ mod tsts {
 
     use super::*;
 
-    #[derive(Default)]
+    #[derive(Default, PartialEq, Debug)]
     struct Mock {
         count: Rc<RefCell<i32>>,
     }
@@ -172,8 +230,28 @@ mod tsts {
     }
 
     impl IntoView for Mock {
+        #[track_caller]
         fn into_view(self) -> crate::View {
-            View::from_composite(self)
+            let caller = std::panic::Location::caller();
+            View::from_composite(format!("{}", caller), self)
+        }
+    }
+
+    impl ToAny for Mock {
+        fn to_any(&self) -> &dyn Any {
+            self
+        }
+    }
+
+    impl AnyEq for Mock {
+        fn eq(&self, _other: &dyn Any) -> bool {
+            self == _other.downcast_ref::<Mock>().unwrap()
+        }
+    }
+
+    impl ToKey for Mock {
+        fn to_key(&self) -> &str {
+            ""
         }
     }
 

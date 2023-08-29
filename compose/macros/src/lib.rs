@@ -27,8 +27,30 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
         }
 
         impl #impl_generics agoraui_compose::IntoView for #name #ty_generics #where_clause {
+            #[track_caller]
             fn into_view(self) ->  agoraui_compose::View {
-                agoraui_compose::View::from_composite(self)
+                let caller = std::panic::Location::caller();
+                agoraui_compose::View::from_composite(format!("{}",caller),self)
+            }
+        }
+
+        impl #impl_generics agoraui_compose::ToAny for #name #ty_generics #where_clause {
+            fn to_any(&self) -> &dyn std::any::Any {
+                self
+            }
+
+
+        }
+
+        impl #impl_generics agoraui_compose::AnyEq for #name #ty_generics #where_clause {
+            fn eq(&self, other: &dyn std::any::Any) -> bool {
+                self == other.downcast_ref::<#name #ty_generics>().unwrap()
+            }
+        }
+
+        impl #impl_generics agoraui_compose::ToKey for #name #ty_generics #where_clause {
+            fn to_key(&self) -> &str {
+                ""
             }
         }
     }
@@ -77,8 +99,28 @@ pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
         }
 
         impl #impl_generics agoraui_compose::IntoView for #name #ty_generics #where_clause {
+            #[track_caller]
             fn into_view(self) ->  agoraui_compose::View {
-                agoraui_compose::View::from_composite_with_state(self)
+                let caller = std::panic::Location::caller();
+                agoraui_compose::View::from_composite_with_state(format!("{}",caller),self)
+            }
+        }
+
+        impl #impl_generics agoraui_compose::ToAny for #name #ty_generics #where_clause {
+            fn to_any(&self) -> &dyn std::any::Any {
+                self
+            }
+        }
+
+        impl #impl_generics agoraui_compose::AnyEq for #name #ty_generics #where_clause {
+            fn eq(&self, other: &dyn std::any::Any) -> bool {
+                self == other.downcast_ref::<#name #ty_generics>().unwrap()
+            }
+        }
+
+        impl #impl_generics agoraui_compose::ToKey for #name #ty_generics #where_clause {
+            fn to_key(&self) -> &str {
+                ""
             }
         }
     }
