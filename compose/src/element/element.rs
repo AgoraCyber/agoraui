@@ -69,15 +69,22 @@ pub fn update_child(child: Option<Element>, new_configuration: Option<View>) -> 
         return None;
     }
 
-    let child = child.unwrap();
+    if let Some(child) = child {
+        let new_configuration = new_configuration.unwrap();
 
-    let new_configuration = new_configuration.unwrap();
+        let _has_same_super_element_type = has_same_super_element_type(&child, &new_configuration);
 
-    let has_same_super_element_type = has_same_super_element_type(&child, &new_configuration);
+        let configuration = child.view();
 
-    // if has_same_super_element_type
+        if configuration == new_configuration {
+            // don't update
+            return Some(child);
+        } else if configuration.to_key() == new_configuration.to_key() {
+        }
+    } else {
+    }
 
-    unimplemented!()
+    None
 }
 
 fn has_same_super_element_type(child: &Element, new_configuration: &View) -> bool {
