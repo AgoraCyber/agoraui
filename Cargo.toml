@@ -1,12 +1,13 @@
 [package]
-description = "web3ui helps us build great-looking apps across all platforms with the power of rust :)"
-documentation = "https://docs.rs/web3ui"
+description = "agoraui helps us build great-looking apps across all platforms with the power of rust :)"
+documentation = "https://docs.rs/agoraui"
 edition.workspace = true
 license = "MIT"
-name = "web3ui"
+name = "agoraui"
 version.workspace = true
 
 [dependencies]
+agoraui-compose = {workspace = true}
 
 [workspace]
 members = ["./", "compose"]
@@ -45,3 +46,5 @@ quote = "^1"
 impl-trait-for-tuples = "0.2.2"
 
 futures-signals = "0.3.32"
+
+agoraui-compose = {path = "./compose"}

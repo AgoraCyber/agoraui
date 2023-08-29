@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::ItemStruct;
 
-#[proc_macro_derive(Composite)]
+#[proc_macro_derive(Stateless)]
 pub fn derive_composite(item: TokenStream) -> TokenStream {
     let item_struct = syn::parse_macro_input!(item as ItemStruct);
 
@@ -14,7 +14,7 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
 
     quote! {
 
-        impl #impl_generics agoraui_compose::ICompositeView for #name #ty_generics #where_clause {
+        impl #impl_generics agoraui_compose::StatelessConfigration for #name #ty_generics #where_clause {
             fn framework_build(&self) -> agoraui_compose::View {
                 self.build().into_view()
             }
@@ -22,7 +22,7 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
 
         impl #impl_generics agoraui_compose::ToElement for #name #ty_generics #where_clause {
             fn to_element(&self, view: agoraui_compose::View) -> agoraui_compose::Element {
-                agoraui_compose::CompositeElement::new(view).into()
+                agoraui_compose::StatelessElement::from(view).into()
             }
         }
 
@@ -30,7 +30,7 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
             #[track_caller]
             fn into_view(self) ->  agoraui_compose::View {
                 let caller = std::panic::Location::caller();
-                agoraui_compose::View::from_composite(format!("{}",caller),self)
+                agoraui_compose::stateless_to_view(caller,self)
             }
         }
 
@@ -38,8 +38,6 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
             fn to_any(&self) -> &dyn std::any::Any {
                 self
             }
-
-
         }
 
         impl #impl_generics agoraui_compose::AnyEq for #name #ty_generics #where_clause {
@@ -48,11 +46,6 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
             }
         }
 
-        impl #impl_generics agoraui_compose::ToKey for #name #ty_generics #where_clause {
-            fn to_key(&self) -> &str {
-                ""
-            }
-        }
     }
     .into()
 }
@@ -76,7 +69,7 @@ pub fn derive_state(item: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro_derive(CompositeWithState)]
+#[proc_macro_derive(Stateful)]
 pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
     let item_struct = syn::parse_macro_input!(item as ItemStruct);
 
@@ -86,15 +79,15 @@ pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
 
     quote! {
 
-        impl #impl_generics agoraui_compose::ICompositeWithStateView for #name #ty_generics #where_clause {
+        impl #impl_generics agoraui_compose::StatefulConfigration for #name #ty_generics #where_clause {
             fn framework_create_state(&self) -> Box<dyn agoraui_compose::State> {
                 Box::new(self.create_state())
             }
         }
 
         impl #impl_generics agoraui_compose::ToElement for #name #ty_generics #where_clause {
-            fn to_element(&self, _view: agoraui_compose::View) -> agoraui_compose::Element {
-                agoraui_compose::Element::Empty
+            fn to_element(&self, view: agoraui_compose::View) -> agoraui_compose::Element {
+                agoraui_compose::StatefulElement::from(view).into()
             }
         }
 
@@ -102,7 +95,7 @@ pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
             #[track_caller]
             fn into_view(self) ->  agoraui_compose::View {
                 let caller = std::panic::Location::caller();
-                agoraui_compose::View::from_composite_with_state(format!("{}",caller),self)
+                agoraui_compose::stateful_to_view(caller,self)
             }
         }
 
@@ -115,12 +108,6 @@ pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
         impl #impl_generics agoraui_compose::AnyEq for #name #ty_generics #where_clause {
             fn eq(&self, other: &dyn std::any::Any) -> bool {
                 self == other.downcast_ref::<#name #ty_generics>().unwrap()
-            }
-        }
-
-        impl #impl_generics agoraui_compose::ToKey for #name #ty_generics #where_clause {
-            fn to_key(&self) -> &str {
-                ""
             }
         }
     }
