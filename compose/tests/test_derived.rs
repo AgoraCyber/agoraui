@@ -1,7 +1,9 @@
 use agoraui_compose::*;
 
 #[derive(Debug, Stateless, PartialEq)]
-struct Text {}
+struct Text {
+    label: String,
+}
 
 impl Text {
     fn build(&self, _: &mut impl BuildContext) -> impl IntoView {}
@@ -52,7 +54,9 @@ struct IconText {}
 
 impl IconText {
     fn build(&self, _: &mut impl BuildContext) -> impl IntoView {
-        Text {}
+        Text {
+            label: "Hello".to_string(),
+        }
     }
 }
 
@@ -65,4 +69,12 @@ fn test_to_element_child_element() {
     element.mount(None);
 
     assert_ne!(element.child(), None);
+
+    assert_eq!(
+        element.child().unwrap().view(),
+        Text {
+            label: "Hello".to_string(),
+        }
+        .into_view()
+    );
 }
