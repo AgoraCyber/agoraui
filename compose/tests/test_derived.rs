@@ -43,4 +43,26 @@ fn test_to_element() {
     assert_eq!(element.view(), view);
 
     element.mount(None);
+
+    assert_eq!(element.child(), None);
+}
+
+#[derive(Debug, Stateless, PartialEq)]
+struct IconText {}
+
+impl IconText {
+    fn build(&self, _: &mut impl BuildContext) -> impl IntoView {
+        Text {}
+    }
+}
+
+#[test]
+fn test_to_element_child_element() {
+    let view = IconText {}.into_view();
+
+    let mut element = view.to_element();
+
+    element.mount(None);
+
+    assert_ne!(element.child(), None);
 }

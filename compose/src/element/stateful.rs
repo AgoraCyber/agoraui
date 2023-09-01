@@ -1,8 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{
-    update_child, ComponentElement, Element, IElement, State, Stateful, View, WeakElement,
-};
+use crate::{ComponentElement, Element, IElement, State, Stateful, View, WeakElement};
 
 use super::BuildContext;
 
@@ -40,16 +38,12 @@ impl From<StatefulElement> for Element {
 impl BuildContext for StatefulElement {}
 
 impl IElement for StatefulElement {
-    fn mount(&mut self, parent: Option<WeakElement>) {
+    fn mount(self_: &mut Rc<RefCell<Self>>, parent: Option<WeakElement>) {
+        ComponentElement::compounent_mount(self_, parent);
+    }
+
+    fn set_parent(&mut self, parent: Option<WeakElement>) {
         self.parent = parent;
-
-        let state = self.state.clone();
-
-        let built = state.borrow_mut().framework_build(self);
-
-        let child = self.child.take();
-
-        self.child = update_child(self, child, Some(built));
     }
 
     fn update(&mut self, view: View) {
@@ -73,6 +67,29 @@ impl IElement for StatefulElement {
     }
 
     fn deactivate(&mut self) {}
+
+    fn downgrade(self_: &mut Rc<RefCell<Self>>) -> WeakElement {
+        WeakElement::Stateful(Rc::downgrade(self_))
+    }
 }
 
-impl ComponentElement for StatefulElement {}
+impl ComponentElement for StatefulElement {
+    /// preformance rebuild this component element.
+    fn build(&mut self) -> View {
+        let state = self.state.clone();
+
+        let view = state.borrow_mut().framework_build(self);
+
+        view
+    }
+
+    /// take child element
+    fn child(&mut self) -> &mut Option<Element> {
+        &mut self.child
+    }
+
+    /// Store child element
+    fn set_child(&mut self, child: Option<Element>) {
+        self.child = child;
+    }
+}
