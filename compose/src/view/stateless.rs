@@ -1,11 +1,13 @@
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
+use crate::StatelessElement;
+
 use super::*;
 
 /// Stateless ui element configration.
 pub trait StatelessConfigration: ToElement + IntoView + ToAny + AnyEq + Debug {
     /// Rebuild this view configration.
-    fn framework_build(&self) -> View;
+    fn framework_build(&self, element: &mut StatelessElement) -> View;
 }
 
 pub type Stateless = Configration<dyn StatelessConfigration>;

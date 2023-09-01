@@ -1,10 +1,11 @@
-#![allow(dead_code)]
-
 mod stateful;
 pub use stateful::*;
 
 mod stateless;
 pub use stateless::*;
+
+mod build_context;
+pub use build_context::*;
 
 use std::{
     cell::RefCell,
@@ -26,9 +27,9 @@ type RcWeakElement<T> = Weak<RefCell<T>>;
 pub enum Element {
     /// Empty element do nothing.
     Empty,
-
+    /// Render element for [`Stateful`](crate::Stateful) configuration
     Stateful(RcElement<StatefulElement>),
-
+    /// Render element for [`Stateless`](crate::Stateless) configuration
     Stateless(RcElement<StatelessElement>),
 }
 
@@ -53,16 +54,16 @@ impl Element {
 
 impl IElement for Element {
     /// Implement [`mount`](IElement::mount) function.
-    fn mount(&mut self, _parent: Option<WeakElement>) {
+    fn mount(&mut self, parent: Option<WeakElement>) {
         match self {
             Element::Empty => {}
-            Element::Stateful(_) => {}
-            Element::Stateless(_) => {}
+            Element::Stateful(element) => element.borrow_mut().parent = parent,
+            Element::Stateless(element) => element.borrow_mut().parent = parent,
         }
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum WeakElement {
     /// Empty element do nothing.
     Empty,

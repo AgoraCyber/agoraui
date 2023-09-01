@@ -3,6 +3,7 @@ use std::panic::Location;
 ///  identity of render element in the view tree
 #[derive(Debug, Clone, PartialEq)]
 pub enum KeyPath {
+    /// Empty KeyPath type.
     Empty,
     /// use rust caller location as unique identities
     TrackCaller(&'static Location<'static>),

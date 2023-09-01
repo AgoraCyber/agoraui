@@ -1,5 +1,7 @@
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
+use crate::StatefulElement;
+
 use super::*;
 
 /// Stateless ui element configration.
@@ -10,11 +12,12 @@ pub trait StatefulConfigration: ToElement + IntoView + ToAny + AnyEq + Debug {
 
 pub trait State {
     /// Rebuild ui configuration.
-    fn framework_build(&self) -> View;
+    fn framework_build(&self, element: &mut StatefulElement) -> View;
 }
 
 pub type Stateful = Configration<dyn StatefulConfigration>;
 
+/// Convert [`Stateful`] configuration to [`View`] configuration.
 pub fn stateful_to_view<T: StatefulConfigration + 'static, K: Into<KeyPath>>(
     keypath: K,
     config: T,

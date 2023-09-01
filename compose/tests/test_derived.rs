@@ -4,7 +4,7 @@ use agoraui_compose::*;
 struct Text {}
 
 impl Text {
-    fn build(&self) -> impl IntoView {}
+    fn build(&self, _: &mut impl BuildContext) -> impl IntoView {}
 }
 
 #[derive(Debug, Stateful, PartialEq)]
@@ -20,7 +20,7 @@ impl InputField {
 struct InputFieldState {}
 
 impl InputFieldState {
-    fn build(&self) -> impl IntoView {}
+    fn build(&self, _: &mut impl BuildContext) -> impl IntoView {}
 }
 
 #[test]
