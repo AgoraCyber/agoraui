@@ -18,6 +18,25 @@ use crate::View;
 pub trait IElement {
     ///  Add this element to the tree in the given slot of the given parent.
     fn mount(&mut self, parent: Option<WeakElement>);
+    /// Update element configuration.
+    fn update(&mut self, view: View);
+
+    /// Get element parent node.
+    fn parent(&self) -> Option<WeakElement>;
+    /// Check if this element eq to rhs
+    fn eq(&self, rhs: WeakElement) -> bool;
+    /// Remove render object from the render tree.
+    fn deactivate(&mut self);
+}
+
+pub trait ComponentElement: IElement {
+    fn deactive_child(&mut self, mut child: Element) {
+        if let Some(parent) = child.parent() {
+            assert!(self.eq(parent));
+        }
+
+        child.deactivate()
+    }
 }
 
 type RcElement<T> = Rc<RefCell<T>>;
@@ -57,8 +76,40 @@ impl IElement for Element {
     fn mount(&mut self, parent: Option<WeakElement>) {
         match self {
             Element::Empty => {}
-            Element::Stateful(element) => element.borrow_mut().parent = parent,
-            Element::Stateless(element) => element.borrow_mut().parent = parent,
+            Element::Stateful(element) => element.borrow_mut().mount(parent),
+            Element::Stateless(element) => element.borrow_mut().mount(parent),
+        }
+    }
+
+    fn update(&mut self, view: View) {
+        match self {
+            Element::Empty => {}
+            Element::Stateful(element) => element.borrow_mut().update(view),
+            Element::Stateless(element) => element.borrow_mut().update(view),
+        }
+    }
+
+    fn parent(&self) -> Option<WeakElement> {
+        match self {
+            Element::Empty => None,
+            Element::Stateful(element) => element.borrow().parent(),
+            Element::Stateless(element) => element.borrow().parent(),
+        }
+    }
+
+    fn eq(&self, rhs: WeakElement) -> bool {
+        match self {
+            Element::Empty => false,
+            Element::Stateful(element) => element.borrow().eq(rhs),
+            Element::Stateless(element) => element.borrow().eq(rhs),
+        }
+    }
+
+    fn deactivate(&mut self) {
+        match self {
+            Element::Empty => {}
+            Element::Stateful(element) => element.borrow_mut().deactivate(),
+            Element::Stateless(element) => element.borrow_mut().deactivate(),
         }
     }
 }
@@ -74,7 +125,11 @@ pub enum WeakElement {
 }
 
 /// Update the given child with the given new configuration.
-pub fn update_child(child: Option<Element>, new_configuration: Option<View>) -> Option<Element> {
+pub fn update_child<P: ComponentElement>(
+    parent: &mut P,
+    child: Option<Element>,
+    new_configuration: Option<View>,
+) -> Option<Element> {
     if new_configuration.is_none() {
         if let Some(child) = child {
             deactive_child(child);
@@ -83,7 +138,7 @@ pub fn update_child(child: Option<Element>, new_configuration: Option<View>) -> 
         return None;
     }
 
-    if let Some(child) = child {
+    if let Some(mut child) = child {
         let new_configuration = new_configuration.unwrap();
 
         let _has_same_super_element_type = has_same_super_element_type(&child, &new_configuration);
@@ -94,6 +149,9 @@ pub fn update_child(child: Option<Element>, new_configuration: Option<View>) -> 
             // don't update
             return Some(child);
         } else if configuration.to_key_path() == new_configuration.to_key_path() {
+            child.update(new_configuration);
+        } else {
+            parent.deactive_child(child);
         }
     } else {
     }

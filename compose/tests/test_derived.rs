@@ -38,7 +38,9 @@ fn test_key_path() {
 fn test_to_element() {
     let view = InputField {}.into_view();
 
-    let element = view.to_element();
+    let mut element = view.to_element();
 
     assert_eq!(element.view(), view);
+
+    element.mount(None);
 }

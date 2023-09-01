@@ -10,7 +10,7 @@ pub trait StatefulConfigration: ToElement + IntoView + ToAny + AnyEq + Debug {
     fn framework_create_state(&self) -> Box<dyn State>;
 }
 
-pub trait State {
+pub trait State: Debug {
     /// Rebuild ui configuration.
     fn framework_build(&self, element: &mut StatefulElement) -> View;
 }
