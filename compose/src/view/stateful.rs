@@ -18,7 +18,7 @@ pub trait State: Debug {
 pub type Stateful = Configration<dyn StatefulConfigration>;
 
 /// Convert [`Stateful`] configuration to [`View`] configuration.
-pub fn stateful_to_view<T: StatefulConfigration + 'static, K: Into<KeyPath>>(
+pub fn stateful_to_view<K: Into<KeyPath>, T: StatefulConfigration + 'static>(
     keypath: K,
     config: T,
 ) -> View {

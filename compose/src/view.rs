@@ -7,8 +7,8 @@ pub use stateful::*;
 mod config;
 pub use config::*;
 
-mod render_object;
-pub use render_object::*;
+mod render;
+pub use render::*;
 
 use crate::{Element, KeyPath};
 use std::any::Any;

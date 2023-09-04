@@ -25,11 +25,14 @@ pub trait IElement {
 
     /// Get element parent node.
     fn parent(&self) -> Option<WeakElement>;
+
     /// Check if this element eq to rhs
     fn eq(&self, rhs: WeakElement) -> bool;
+
     /// Remove render object from the render tree.
     fn deactivate(&mut self);
 
+    /// Convert element to weak element
     fn downgrade(self_: &mut Rc<RefCell<Self>>) -> WeakElement;
 }
 /// The element that composite one or more child elements
