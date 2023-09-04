@@ -43,6 +43,8 @@ pub enum View {
     Stateless(Stateless),
     /// Stateful compoent ui configration.
     Stateful(Stateful),
+    /// Leaf render element configuration.
+    RenderObject(RenderObjectView),
 }
 
 impl IntoView for () {
@@ -74,6 +76,7 @@ impl AnyEq for View {
             View::Empty => true,
             View::Stateless(config) => config.eq(other),
             View::Stateful(config) => config.eq(other),
+            View::RenderObject(config) => config.eq(other),
         }
     }
 }
@@ -84,6 +87,7 @@ impl<'a> From<&'a View> for &'a KeyPath {
             View::Empty => &KeyPath::Empty,
             View::Stateless(config) => config.into(),
             View::Stateful(config) => config.into(),
+            View::RenderObject(config) => config.into(),
         }
     }
 }
@@ -98,6 +102,7 @@ impl View {
             View::Empty => Element::Empty,
             View::Stateless(config) => config.configration.borrow().to_element(self.clone()),
             View::Stateful(config) => config.configration.borrow().to_element(self.clone()),
+            View::RenderObject(config) => config.configration.borrow().to_element(self.clone()),
         }
     }
 }
