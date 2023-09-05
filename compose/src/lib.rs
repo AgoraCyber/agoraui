@@ -1,13 +1,5 @@
-mod view;
-pub use view::*;
+pub mod keypath;
 
-mod keypath;
-pub use keypath::*;
+pub use agoraui_compose_macros as macos;
 
-mod element;
-pub use element::*;
-
-mod render;
-pub use render::*;
-
-pub use agoraui_compose_macros::*;
+pub mod prelude;
