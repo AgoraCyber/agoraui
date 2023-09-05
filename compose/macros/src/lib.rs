@@ -14,35 +14,45 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
 
     quote! {
 
-        impl #impl_generics agoraui_compose::StatelessConfigration for #name #ty_generics #where_clause {
-            fn framework_build(&self, element: &mut agoraui_compose::StatelessElement) -> agoraui_compose::View {
+        impl #impl_generics agoraui_compose::view::StatelessConfiguration for #name #ty_generics #where_clause {
+            fn framework_build(&self, element: &mut agoraui_compose::element::StatelessElement) -> agoraui_compose::view::View {
                 self.build(element).into_view()
             }
         }
 
-        impl #impl_generics agoraui_compose::ToElement for #name #ty_generics #where_clause {
-            fn to_element(&self, view: agoraui_compose::View) -> agoraui_compose::Element {
-                agoraui_compose::StatelessElement::from(view).into()
-            }
-        }
-
-        impl #impl_generics agoraui_compose::IntoView for #name #ty_generics #where_clause {
+        impl #impl_generics agoraui_compose::view::IntoView for #name #ty_generics #where_clause {
             #[track_caller]
-            fn into_view(self) ->  agoraui_compose::View {
-                let caller = std::panic::Location::caller();
-                agoraui_compose::stateless_to_view(caller,self)
+            fn into_view(self) ->  agoraui_compose::view::View {
+                let caller: agoraui_compose::keypath::KeyPath = std::panic::Location::caller().into();
+                agoraui_compose::view::View::Stateless((caller,self).into())
             }
         }
 
-        impl #impl_generics agoraui_compose::ToAny for #name #ty_generics #where_clause {
-            fn to_any(&self) -> &dyn std::any::Any {
-                self
+    }
+    .into()
+}
+
+#[proc_macro_derive(Leaf)]
+pub fn derive_render_object(item: TokenStream) -> TokenStream {
+    let item_struct = syn::parse_macro_input!(item as ItemStruct);
+
+    let (impl_generics, ty_generics, where_clause) = item_struct.generics.split_for_impl();
+
+    let name = &item_struct.ident;
+
+    quote! {
+
+        impl #impl_generics agoraui_compose::view::RenderObjectConfiguration for #name #ty_generics #where_clause {
+            fn framework_create_render_object(&self) -> Box<dyn agoraui_compose::render::RenderObject> {
+                Box::new(self.create_render_object())
             }
         }
 
-        impl #impl_generics agoraui_compose::AnyEq for #name #ty_generics #where_clause {
-            fn eq(&self, other: &dyn std::any::Any) -> bool {
-                self == other.downcast_ref::<#name #ty_generics>().unwrap()
+        impl #impl_generics agoraui_compose::view::IntoView for #name #ty_generics #where_clause {
+            #[track_caller]
+            fn into_view(self) ->  agoraui_compose::view::View {
+                let caller: agoraui_compose::keypath::KeyPath = std::panic::Location::caller().into();
+                agoraui_compose::view::View::RenderObject((caller,self).into())
             }
         }
 
@@ -60,8 +70,8 @@ pub fn derive_state(item: TokenStream) -> TokenStream {
 
     quote! {
 
-        impl #impl_generics agoraui_compose::State for #name #ty_generics #where_clause {
-            fn framework_build(&self, element: &mut agoraui_compose::StatefulElement) -> agoraui_compose::View {
+        impl #impl_generics agoraui_compose::view::State for #name #ty_generics #where_clause {
+            fn framework_build(&self, element: element: &mut agoraui_compose::element::StatefulElement) -> agoraui_compose::View {
                 self.build(element).into_view()
             }
         }
@@ -79,35 +89,17 @@ pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
 
     quote! {
 
-        impl #impl_generics agoraui_compose::StatefulConfigration for #name #ty_generics #where_clause {
-            fn framework_create_state(&self) -> Box<dyn agoraui_compose::State> {
+        impl #impl_generics agoraui_compose::view::StatefulConfiguration for #name #ty_generics #where_clause {
+            fn framework_create_state(&self) -> Box<dyn agoraui_compose::view::State> {
                 Box::new(self.create_state())
             }
         }
 
-        impl #impl_generics agoraui_compose::ToElement for #name #ty_generics #where_clause {
-            fn to_element(&self, view: agoraui_compose::View) -> agoraui_compose::Element {
-                agoraui_compose::StatefulElement::from(view).into()
-            }
-        }
-
-        impl #impl_generics agoraui_compose::IntoView for #name #ty_generics #where_clause {
+        impl #impl_generics agoraui_compose::view::ntoView for #name #ty_generics #where_clause {
             #[track_caller]
-            fn into_view(self) ->  agoraui_compose::View {
-                let caller = std::panic::Location::caller();
-                agoraui_compose::stateful_to_view(caller,self)
-            }
-        }
-
-        impl #impl_generics agoraui_compose::ToAny for #name #ty_generics #where_clause {
-            fn to_any(&self) -> &dyn std::any::Any {
-                self
-            }
-        }
-
-        impl #impl_generics agoraui_compose::AnyEq for #name #ty_generics #where_clause {
-            fn eq(&self, other: &dyn std::any::Any) -> bool {
-                self == other.downcast_ref::<#name #ty_generics>().unwrap()
+            fn into_view(self) ->  agoraui_compose::view::View {
+                let caller: agoraui_compose::keypath::KeyPath = std::panic::Location::caller().into();
+                 agoraui_compose::view::View::Stateful((caller,self).into())
             }
         }
     }
