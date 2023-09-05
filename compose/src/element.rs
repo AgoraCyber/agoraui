@@ -1,25 +1,40 @@
-use indextree::NodeId;
+mod wrapper;
+pub use wrapper::*;
+
+mod context;
+pub use context::*;
+
+mod composite;
+pub use composite::*;
+
+mod stateful;
+pub use stateful::*;
+
+mod stateless;
+pub use stateless::*;
+
+mod render;
+pub use render::*;
+
+use indextree::{Arena, NodeId};
 
 use crate::view::{
-    Configuration, RenderObjectConfiguration, StatefulConfiguration, StatelessConfiguration,
+    Configuration, RenderObjectConfiguration, StatefulConfiguration, StatelessConfiguration, View,
 };
 
-pub trait BuildContext {}
+/// Element reference id
+pub type ElementId = NodeId;
 
-#[derive(Debug)]
-pub struct StatefulElement(pub Configuration<dyn StatefulConfiguration>);
+pub trait ElementService {
+    fn to_id(&self) -> ElementId;
+    fn rebuild(&mut self) {}
 
-impl BuildContext for StatefulElement {}
+    fn mount(&mut self, arena: &mut Arena<Element>, parent: Option<ElementId>) {
+        parent.map(|p| p.append(self.to_id(), arena));
 
-#[derive(Debug)]
-pub struct StatelessElement(pub Configuration<dyn StatelessConfiguration>);
-
-impl BuildContext for StatelessElement {}
-
-#[derive(Debug)]
-pub struct RenderElement(pub Configuration<dyn RenderObjectConfiguration>);
-
-impl BuildContext for RenderElement {}
+        self.rebuild();
+    }
+}
 
 #[derive(Debug)]
 pub enum Element {
@@ -28,4 +43,19 @@ pub enum Element {
     Render(RenderElement),
 }
 
-pub type ElementId = NodeId;
+impl ElementService for Element {
+    fn mount(&mut self, arena: &mut Arena<Element>, parent: Option<ElementId>) {
+        match self {
+            Element::Stateful(e) => e.mount(arena, parent),
+            Element::Stateless(e) => e.mount(arena, parent),
+            Element::Render(e) => e.mount(arena, parent),
+        }
+    }
+    fn to_id(&self) -> ElementId {
+        match self {
+            Element::Stateful(e) => e.to_id(),
+            Element::Stateless(e) => e.to_id(),
+            Element::Render(e) => e.to_id(),
+        }
+    }
+}

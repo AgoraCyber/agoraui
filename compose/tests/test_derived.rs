@@ -49,3 +49,26 @@ fn test_render_object() {
         _ => assert!(false, "expect Render element"),
     }
 }
+
+#[test]
+fn test_arena_ancestors() {
+    _ = pretty_env_logger::try_init();
+
+    let mut arena = Arena::new();
+
+    let a = arena.new_node(1);
+    let b = arena.new_node(2);
+    let c = arena.new_node(3);
+
+    a.append(b, &mut arena);
+
+    b.append(c, &mut arena);
+
+    for i in c.ancestors(&arena) {
+        log::debug!("{}", i);
+    }
+
+    c.ancestors(&arena);
+
+    assert_eq!(arena.get(c).unwrap().parent().unwrap(), b);
+}

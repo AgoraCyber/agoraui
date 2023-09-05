@@ -93,15 +93,9 @@ impl View {
     pub fn to_element(self, arena: &mut Arena<Element>) -> Option<ElementId> {
         match self {
             View::Empty => None,
-            View::Stateful(config) => arena
-                .new_node(Element::Stateful(StatefulElement(config)))
-                .into(),
-            View::Stateless(config) => arena
-                .new_node(Element::Stateless(StatelessElement(config)))
-                .into(),
-            View::RenderObject(config) => arena
-                .new_node(Element::Render(RenderElement(config)))
-                .into(),
+            View::Stateful(config) => StatefulElement::new(arena, config).into(),
+            View::Stateless(config) => StatelessElement::new(arena, config).into(),
+            View::RenderObject(config) => RenderElement::new(arena, config).into(),
         }
     }
 }
