@@ -22,3 +22,15 @@ impl RenderElement {
         id
     }
 }
+
+impl ToConfiguration for RenderElement {
+    fn to_configuration(&self) -> View {
+        View::RenderObject(self.config.clone())
+    }
+
+    fn update_configuration(&mut self, view: View) {
+        if let View::RenderObject(config) = view {
+            self.config = config
+        }
+    }
+}

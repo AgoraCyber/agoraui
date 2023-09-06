@@ -27,6 +27,12 @@ use crate::view::{
 /// Element reference id
 pub type ElementId = NodeId;
 
+pub trait ToConfiguration {
+    fn to_configuration(&self) -> View;
+
+    fn update_configuration(&mut self, view: View);
+}
+
 pub trait ElementProvider {
     fn mounted(&self) -> bool;
 
@@ -34,12 +40,12 @@ pub trait ElementProvider {
 
     fn to_id(&self) -> ElementId;
 
-    fn rebuild(&mut self) {}
+    fn rebuild(&mut self, _arena: &mut Arena<Element>) {}
 
     fn mount(&mut self, arena: &mut Arena<Element>, parent: Option<ElementId>) {
         parent.map(|p| p.append(self.to_id(), arena));
 
-        self.rebuild();
+        self.rebuild(arena);
 
         self.set_mount_flag(true);
     }
@@ -70,9 +76,9 @@ impl Element {
     /// Convert element to [`view configuration`](View)
     pub fn to_configuration(&self) -> View {
         match self {
-            Element::Stateful(e) => View::Stateful(e.borrow().config.clone()),
-            Element::Stateless(e) => View::Stateless(e.borrow().config.clone()),
-            Element::Render(e) => View::RenderObject(e.borrow().config.clone()),
+            Element::Stateful(e) => e.borrow().to_configuration(),
+            Element::Stateless(e) => e.borrow().to_configuration(),
+            Element::Render(e) => e.borrow().to_configuration(),
         }
     }
 
@@ -81,6 +87,14 @@ impl Element {
             Element::Stateful(e) => e.borrow().mounted(),
             Element::Stateless(e) => e.borrow().mounted(),
             Element::Render(e) => e.borrow().mounted(),
+        }
+    }
+
+    pub fn update_configuration(&self, view: View) {
+        match self {
+            Element::Stateful(e) => e.borrow_mut().update_configuration(view),
+            Element::Stateless(e) => e.borrow_mut().update_configuration(view),
+            Element::Render(e) => e.borrow_mut().update_configuration(view),
         }
     }
 }

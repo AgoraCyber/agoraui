@@ -23,6 +23,18 @@ impl StatefulElement {
     }
 }
 
+impl ToConfiguration for StatefulElement {
+    fn to_configuration(&self) -> View {
+        View::Stateful(self.config.clone())
+    }
+
+    fn update_configuration(&mut self, view: View) {
+        if let View::Stateful(config) = view {
+            self.config = config
+        }
+    }
+}
+
 impl CompositeElement for StatefulElement {
     fn build(&mut self) -> View {
         todo!()

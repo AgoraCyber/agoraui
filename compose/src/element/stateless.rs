@@ -25,6 +25,18 @@ impl StatelessElement {
     }
 }
 
+impl ToConfiguration for StatelessElement {
+    fn to_configuration(&self) -> View {
+        View::Stateless(self.config.clone())
+    }
+
+    fn update_configuration(&mut self, view: View) {
+        if let View::Stateless(config) = view {
+            self.config = config
+        }
+    }
+}
+
 impl CompositeElement for StatelessElement {
     fn build(&mut self) -> View {
         self.config.view.clone().borrow().framework_build(self)

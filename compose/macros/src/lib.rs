@@ -28,6 +28,18 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
             }
         }
 
+        impl #impl_generics agoraui_compose::view::ToAny for #name #ty_generics #where_clause {
+            fn to_any(&self) -> &dyn std::any::Any {
+                self
+            }
+        }
+
+        impl #impl_generics agoraui_compose::view::AnyEq for #name #ty_generics #where_clause {
+            fn eq(&self, other: &dyn std::any::Any) -> bool {
+                self == other.downcast_ref::<#name #ty_generics>().unwrap()
+            }
+        }
+
     }
     .into()
 }
@@ -53,6 +65,18 @@ pub fn derive_render_object(item: TokenStream) -> TokenStream {
             fn into_view(self) ->  agoraui_compose::view::View {
                 let caller: agoraui_compose::keypath::KeyPath = std::panic::Location::caller().into();
                 agoraui_compose::view::View::RenderObject((caller,self).into())
+            }
+        }
+
+        impl #impl_generics agoraui_compose::view::ToAny for #name #ty_generics #where_clause {
+            fn to_any(&self) -> &dyn std::any::Any {
+                self
+            }
+        }
+
+        impl #impl_generics agoraui_compose::view::AnyEq for #name #ty_generics #where_clause {
+            fn eq(&self, other: &dyn std::any::Any) -> bool {
+                self == other.downcast_ref::<#name #ty_generics>().unwrap()
             }
         }
 
@@ -100,6 +124,18 @@ pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
             fn into_view(self) ->  agoraui_compose::view::View {
                 let caller: agoraui_compose::keypath::KeyPath = std::panic::Location::caller().into();
                  agoraui_compose::view::View::Stateful((caller,self).into())
+            }
+        }
+
+        impl #impl_generics agoraui_compose::view::ToAny for #name #ty_generics #where_clause {
+            fn to_any(&self) -> &dyn std::any::Any {
+                self
+            }
+        }
+
+        impl #impl_generics agoraui_compose::view::AnyEq for #name #ty_generics #where_clause {
+            fn eq(&self, other: &dyn std::any::Any) -> bool {
+                self == other.downcast_ref::<#name #ty_generics>().unwrap()
             }
         }
     }

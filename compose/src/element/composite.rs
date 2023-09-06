@@ -1,19 +1,53 @@
 use super::*;
 
-pub trait CompositeElement: ElementProvider {
+pub trait CompositeElement: ElementProvider + ToConfiguration {
     fn build(&mut self) -> View;
 
     fn child(&self) -> Option<ElementId>;
 
     fn set_child(&mut self, new: Option<ElementId>);
 
-    fn rebuild(&mut self) {
+    fn rebuild(&mut self, arena: &mut Arena<Element>) {
         let new_configuration = self.build();
 
-        self.update_child(new_configuration);
+        self.update_child(arena, new_configuration);
     }
 
-    fn update_child(&mut self, _new_configuration: View) {
-        self.set_child(Some(self.to_id()))
+    fn update_child(&mut self, arena: &mut Arena<Element>, new_configuration: View) {
+        if let View::Empty = new_configuration {
+            if let Some(id) = self.child() {
+                self.deactive_child(arena, id);
+            }
+            self.set_child(None);
+            return;
+        }
+
+        let configuration = self.to_configuration();
+
+        if let Some(id) = self.child() {
+            let child = arena.get_mut(id).unwrap().get_mut().clone();
+
+            if configuration == new_configuration {
+                // Skip update child element.
+                return;
+            } else if configuration.same_type(&new_configuration)
+                && configuration.to_keypath() == new_configuration.to_keypath()
+            {
+                child.update_configuration(new_configuration);
+            } else {
+                self.deactive_child(arena, id);
+                self.inflate_view(arena, new_configuration);
+            }
+        } else {
+            self.inflate_view(arena, new_configuration);
+        }
+    }
+
+    fn deactive_child(&mut self, arena: &mut Arena<Element>, id: ElementId) {
+        id.remove(arena);
+    }
+
+    fn inflate_view(&mut self, arena: &mut Arena<Element>, configuration: View) {
+        self.set_child(configuration.into_element(arena));
     }
 }

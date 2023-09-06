@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Rc;
@@ -14,7 +15,15 @@ pub trait IntoView {
     fn into_view(self) -> View;
 }
 
-pub trait StatefulConfiguration: IntoView + Debug {
+pub trait AnyEq {
+    fn eq(&self, rhs: &dyn Any) -> bool;
+}
+
+pub trait ToAny {
+    fn to_any(&self) -> &dyn Any;
+}
+
+pub trait StatefulConfiguration: ToAny + AnyEq + IntoView + Debug {
     fn framework_create_state(&self) -> Box<dyn State>;
 }
 
@@ -22,11 +31,11 @@ pub trait State {
     fn framework_build(&self, element: &mut StatefulElement) -> View;
 }
 
-pub trait StatelessConfiguration: IntoView + Debug {
+pub trait StatelessConfiguration: ToAny + AnyEq + IntoView + Debug {
     fn framework_build(&self, element: &mut StatelessElement) -> View;
 }
 
-pub trait RenderObjectConfiguration: IntoView + Debug {
+pub trait RenderObjectConfiguration: ToAny + AnyEq + IntoView + Debug {
     fn framework_create_render_object(&self) -> Box<dyn RenderObject>;
 }
 
@@ -45,6 +54,15 @@ where
             key_path: self.key_path.clone(),
             view: self.view.clone(),
         }
+    }
+}
+
+impl<T> PartialEq for Configuration<T>
+where
+    T: ?Sized + AnyEq + ToAny,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.key_path == other.key_path && self.view.borrow().eq(other.view.borrow().to_any())
     }
 }
 
@@ -81,7 +99,7 @@ impl<T: RenderObjectConfiguration + 'static> From<(KeyPath, T)>
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum View {
     Empty,
     Stateful(Configuration<dyn StatefulConfiguration>),
@@ -90,12 +108,31 @@ pub enum View {
 }
 
 impl View {
-    pub fn to_element(self, arena: &mut Arena<Element>) -> Option<ElementId> {
+    pub fn into_element(self, arena: &mut Arena<Element>) -> Option<ElementId> {
         match self {
             View::Empty => None,
             View::Stateful(config) => StatefulElement::new(arena, config).into(),
             View::Stateless(config) => StatelessElement::new(arena, config).into(),
             View::RenderObject(config) => RenderElement::new(arena, config).into(),
+        }
+    }
+
+    pub fn same_type(&self, view: &View) -> bool {
+        match (self, view) {
+            (View::Empty, View::Empty) => true,
+            (View::Stateful(_), View::Stateful(_)) => true,
+            (View::Stateless(_), View::Stateless(_)) => true,
+            (View::RenderObject(_), View::RenderObject(_)) => true,
+            _ => false,
+        }
+    }
+
+    pub fn to_keypath(&self) -> Option<&KeyPath> {
+        match self {
+            View::Empty => None,
+            View::Stateful(config) => Some(&config.key_path),
+            View::Stateless(config) => Some(&config.key_path),
+            View::RenderObject(config) => Some(&config.key_path),
         }
     }
 }

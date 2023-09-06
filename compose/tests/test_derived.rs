@@ -1,7 +1,7 @@
 use agoraui_compose::prelude::*;
 use indextree::Arena;
 
-#[derive(Debug, Stateless)]
+#[derive(Debug, PartialEq, Stateless)]
 struct Text {}
 
 impl Text {
@@ -10,7 +10,7 @@ impl Text {
     }
 }
 
-#[derive(Debug, Leaf)]
+#[derive(Debug, PartialEq, Leaf)]
 struct Label {}
 
 impl Label {
@@ -28,7 +28,7 @@ fn test_into_view() {
     let mut arena = Arena::new();
     let view = Text {}.into_view();
 
-    let element_id = view.to_element(&mut arena);
+    let element_id = view.into_element(&mut arena);
 
     assert!(element_id.is_some());
 }
@@ -38,7 +38,7 @@ fn test_render_object() {
     let mut arena = Arena::new();
     let view = Label {}.into_view();
 
-    let element_id = view.to_element(&mut arena);
+    let element_id = view.into_element(&mut arena);
 
     assert!(element_id.is_some());
 
@@ -78,7 +78,7 @@ fn test_mount() {
     let mut arena = Arena::new();
     let view = Label {}.into_view();
 
-    let element_id = view.to_element(&mut arena).unwrap();
+    let element_id = view.into_element(&mut arena).unwrap();
 
     let element = arena.get(element_id).unwrap().get().clone();
 
