@@ -7,14 +7,17 @@ impl StatelessElement {
         arena: &mut Arena<Element>,
         config: Configuration<dyn StatelessConfiguration>,
     ) -> ElementId {
-        let id = arena.new_node(Element::Stateless(StatelessElement {
-            id: None,
-            config,
-            content: None,
-        }));
+        let id = arena.new_node(Element::Stateless(Rc::new(RefCell::new(
+            StatelessElement {
+                id: None,
+                config,
+                mounted: false,
+                content: None,
+            },
+        ))));
 
         match arena.get_mut(id).unwrap().get_mut() {
-            Element::Stateless(e) => e.id = Some(id),
+            Element::Stateless(e) => e.borrow_mut().id = Some(id),
             _ => {}
         }
 
