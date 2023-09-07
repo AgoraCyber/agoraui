@@ -33,6 +33,7 @@ pub trait CompositeElement: ElementProvider + ToConfiguration {
             } else if configuration.same_type(&new_configuration)
                 && configuration.to_keypath() == new_configuration.to_keypath()
             {
+                // Same element type and path with different configuration.
                 child.update_configuration(new_configuration);
             } else {
                 self.deactive_child(arena, id);
@@ -48,6 +49,14 @@ pub trait CompositeElement: ElementProvider + ToConfiguration {
     }
 
     fn inflate_view(&mut self, arena: &mut Arena<Element>, configuration: View) {
-        self.set_child(configuration.into_element(arena));
+        let child_id = configuration.into_element(arena);
+
+        if let Some(child_id) = child_id {
+            let element = arena.get(child_id).unwrap().get().clone();
+
+            element.mount(arena, Some(self.to_id()));
+        }
+
+        self.set_child(child_id);
     }
 }
