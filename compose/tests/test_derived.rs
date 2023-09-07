@@ -76,7 +76,7 @@ fn test_arena_ancestors() {
 #[test]
 fn test_mount() {
     let mut arena = Arena::new();
-    let view = Label {}.into_view();
+    let view = Text {}.into_view();
 
     let element_id = view.into_element(&mut arena).unwrap();
 
@@ -85,4 +85,14 @@ fn test_mount() {
     element.mount(&mut arena, None);
 
     assert!(arena.get(element_id).unwrap().get().mounted());
+
+    assert!(element.child_id().is_some());
+
+    let child = arena
+        .get(element.child_id().unwrap())
+        .unwrap()
+        .get()
+        .clone();
+
+    assert!(child.child_id().is_none());
 }

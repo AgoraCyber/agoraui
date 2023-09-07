@@ -1,13 +1,11 @@
 use super::*;
 
-pub trait CompositeElement: ElementProvider + ToConfiguration {
+pub trait CompositeElement: ElementProvider + ToConfiguration + GetChild {
     fn build(&mut self) -> View;
-
-    fn child(&self) -> Option<ElementId>;
 
     fn set_child(&mut self, new: Option<ElementId>);
 
-    fn rebuild(&mut self, arena: &mut Arena<Element>) {
+    fn composite_rebuild(&mut self, arena: &mut Arena<Element>) {
         let new_configuration = self.build();
 
         self.update_child(arena, new_configuration);

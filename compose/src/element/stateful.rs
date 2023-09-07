@@ -40,11 +40,19 @@ impl CompositeElement for StatefulElement {
         todo!()
     }
 
+    fn set_child(&mut self, new: Option<ElementId>) {
+        self.content = new
+    }
+}
+
+impl GetChild for StatefulElement {
     fn child(&self) -> Option<ElementId> {
         self.content.clone()
     }
+}
 
-    fn set_child(&mut self, new: Option<ElementId>) {
-        self.content = new
+impl Mountable for StatefulElement {
+    fn rebuild(&mut self, arena: &mut Arena<Element>) {
+        self.composite_rebuild(arena)
     }
 }

@@ -34,3 +34,13 @@ impl ToConfiguration for RenderElement {
         }
     }
 }
+
+impl GetChild for RenderElement {
+    fn child(&self) -> Option<ElementId> {
+        None
+    }
+}
+
+impl Mountable for RenderElement {
+    fn rebuild(&mut self, _arena: &mut Arena<Element>) {}
+}

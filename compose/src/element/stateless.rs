@@ -42,11 +42,19 @@ impl CompositeElement for StatelessElement {
         self.config.view.clone().borrow().framework_build(self)
     }
 
+    fn set_child(&mut self, new: Option<ElementId>) {
+        self.content = new
+    }
+}
+
+impl GetChild for StatelessElement {
     fn child(&self) -> Option<ElementId> {
         self.content.clone()
     }
+}
 
-    fn set_child(&mut self, new: Option<ElementId>) {
-        self.content = new
+impl Mountable for StatelessElement {
+    fn rebuild(&mut self, arena: &mut Arena<Element>) {
+        self.composite_rebuild(arena)
     }
 }

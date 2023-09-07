@@ -33,14 +33,12 @@ pub trait ToConfiguration {
     fn update_configuration(&mut self, view: View);
 }
 
-pub trait ElementProvider {
-    fn mounted(&self) -> bool;
+pub trait GetChild {
+    fn child(&self) -> Option<ElementId>;
+}
 
-    fn set_mount_flag(&mut self, flag: bool);
-
-    fn to_id(&self) -> ElementId;
-
-    fn rebuild(&mut self, _arena: &mut Arena<Element>) {}
+pub trait Mountable: ElementProvider {
+    fn rebuild(&mut self, _arena: &mut Arena<Element>);
 
     fn mount(&mut self, arena: &mut Arena<Element>, parent: Option<ElementId>) {
         parent.map(|p| p.append(self.to_id(), arena));
@@ -49,6 +47,14 @@ pub trait ElementProvider {
 
         self.set_mount_flag(true);
     }
+}
+
+pub trait ElementProvider {
+    fn mounted(&self) -> bool;
+
+    fn set_mount_flag(&mut self, flag: bool);
+
+    fn to_id(&self) -> ElementId;
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +72,8 @@ impl Element {
             Element::Render(e) => e.borrow_mut().mount(arena, parent),
         }
     }
+
+    /// Convert self to [`ElementId`]
     pub fn to_id(&self) -> ElementId {
         match self {
             Element::Stateful(e) => e.borrow_mut().to_id(),
@@ -82,6 +90,7 @@ impl Element {
         }
     }
 
+    /// Return mounted flag.
     pub fn mounted(&self) -> bool {
         match self {
             Element::Stateful(e) => e.borrow().mounted(),
@@ -90,11 +99,21 @@ impl Element {
         }
     }
 
+    /// Update element configuration
     pub fn update_configuration(&self, view: View) {
         match self {
             Element::Stateful(e) => e.borrow_mut().update_configuration(view),
             Element::Stateless(e) => e.borrow_mut().update_configuration(view),
             Element::Render(e) => e.borrow_mut().update_configuration(view),
+        }
+    }
+
+    /// Get child element.
+    pub fn child_id(&self) -> Option<ElementId> {
+        match self {
+            Element::Stateful(e) => e.borrow_mut().child(),
+            Element::Stateless(e) => e.borrow_mut().child(),
+            Element::Render(e) => e.borrow_mut().child(),
         }
     }
 }
