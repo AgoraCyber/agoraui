@@ -108,12 +108,26 @@ impl Element {
         }
     }
 
-    /// Get child element.
+    /// Get child element id.
     pub fn child_id(&self) -> Option<ElementId> {
         match self {
             Element::Stateful(e) => e.borrow_mut().child(),
             Element::Stateless(e) => e.borrow_mut().child(),
             Element::Render(e) => e.borrow_mut().child(),
         }
+    }
+
+    /// Get child element.
+    pub fn child<'a>(&self, arena: &'a Arena<Element>) -> Option<&'a Element> {
+        let id = self.child_id();
+
+        id.map(|id| arena.get(id).unwrap().get())
+    }
+
+    /// Get mutable child element.
+    pub fn child_mut<'a>(&self, arena: &'a mut Arena<Element>) -> Option<&'a mut Element> {
+        let id = self.child_id();
+
+        id.map(|id| arena.get_mut(id).unwrap().get_mut())
     }
 }
