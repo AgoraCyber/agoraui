@@ -45,6 +45,8 @@ impl CompositeElement for StatefulElement {
     }
 }
 
+impl UpdateChild for StatefulElement {}
+
 impl GetChild for StatefulElement {
     fn child(&self) -> Option<ElementId> {
         self.content.clone()

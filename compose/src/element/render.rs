@@ -60,3 +60,5 @@ impl RenderElement {
         self.content.render_object = Some(render_object);
     }
 }
+
+impl UpdateChild for RenderElement {}
