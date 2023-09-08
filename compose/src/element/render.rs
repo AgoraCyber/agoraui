@@ -1,6 +1,13 @@
+use crate::view::RenderObject;
+
 use super::*;
 
-pub type RenderElement = ElementWrapper<dyn RenderObjectConfiguration>;
+#[derive(Default, Debug)]
+pub struct RenderElementContent {
+    pub render_object: Option<Box<dyn RenderObject>>,
+}
+
+pub type RenderElement = ElementWrapper<dyn RenderObjectConfiguration, RenderElementContent>;
 
 impl RenderElement {
     pub(crate) fn new(
@@ -11,7 +18,7 @@ impl RenderElement {
             id: None,
             config,
             mounted: false,
-            content: (),
+            content: RenderElementContent::default(),
         }))));
 
         match arena.get_mut(id).unwrap().get_mut() {
@@ -42,5 +49,14 @@ impl GetChild for RenderElement {
 }
 
 impl Mountable for RenderElement {
-    fn rebuild(&mut self, _arena: &mut Arena<Element>) {}
+    fn rebuild(&mut self, _arena: &mut Arena<Element>) {
+        let render_object = self.config.view.borrow().framework_create_render_object();
+        self.attach_render_object(render_object);
+    }
+}
+
+impl RenderElement {
+    fn attach_render_object(&mut self, render_object: Box<dyn RenderObject>) {
+        self.content.render_object = Some(render_object);
+    }
 }

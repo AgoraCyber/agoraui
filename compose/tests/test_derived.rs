@@ -19,6 +19,7 @@ impl Label {
     }
 }
 
+#[derive(Debug)]
 struct LabelRenderObject {}
 
 impl RenderObject for LabelRenderObject {}
