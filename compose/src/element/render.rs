@@ -89,7 +89,10 @@ impl RenderObjectElement {
 }
 
 impl Lifecycle for RenderObjectElement {
-    fn first_render_object_element(&self, _build_context: &FrameworkContext) -> Option<ElementId> {
+    fn search_first_render_object_element_id(
+        &self,
+        _build_context: &FrameworkContext,
+    ) -> Option<ElementId> {
         self.to_id()
     }
     fn to_render_object_id(&self) -> Option<RenderObjectId> {

@@ -45,7 +45,10 @@ impl StatefulElement {
 }
 
 impl Lifecycle for StatefulElement {
-    fn first_render_object_element(&self, build_context: &FrameworkContext) -> Option<ElementId> {
+    fn search_first_render_object_element_id(
+        &self,
+        build_context: &FrameworkContext,
+    ) -> Option<ElementId> {
         self.composite_first_render_object_id(build_context)
     }
     fn to_render_object_id(&self) -> Option<RenderObjectId> {

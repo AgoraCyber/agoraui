@@ -16,6 +16,12 @@ pub struct RenderObjectNode {
 #[derive(Debug, Clone)]
 pub struct RenderObject(pub Rc<RefCell<RenderObjectNode>>);
 
+impl PartialEq for RenderObject {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.as_ptr() == other.0.as_ptr()
+    }
+}
+
 impl<T: RenderObjectLifecycle + 'static> From<T> for RenderObject {
     fn from(value: T) -> Self {
         Self(Rc::new(RefCell::new(RenderObjectNode {

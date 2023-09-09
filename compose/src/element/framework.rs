@@ -4,7 +4,7 @@ use indextree::NodeId;
 
 use crate::{
     framework::FrameworkContext,
-    view::{Configuration, RenderObjectId, View},
+    view::{Configuration, RenderObject, RenderObjectId, View},
 };
 
 /// Element id in index tree.
@@ -20,7 +20,10 @@ pub trait Initializer {
 
 /// Framework call this trait to handle element lifecycle.
 pub trait Lifecycle: Initializer + Debug {
-    fn first_render_object_element(&self, build_context: &FrameworkContext) -> Option<ElementId>;
+    fn search_first_render_object_element_id(
+        &self,
+        build_context: &FrameworkContext,
+    ) -> Option<ElementId>;
     fn to_render_object_id(&self) -> Option<RenderObjectId>;
 
     fn to_configuration(&self) -> View;
@@ -139,11 +142,39 @@ impl Element {
         self.0.to_render_object_id()
     }
 
-    pub fn first_render_object_element(
+    pub fn search_first_render_object_element_id(
         &self,
         build_context: &FrameworkContext,
     ) -> Option<ElementId> {
-        self.0.first_render_object_element(build_context)
+        self.0.search_first_render_object_element_id(build_context)
+    }
+
+    pub fn first_render_object(&self, build_context: &FrameworkContext) -> Option<RenderObject> {
+        let element_id = self.search_first_render_object_element_id(build_context);
+
+        if let Some(element_id) = element_id {
+            let render_object_id = build_context
+                .element_tree
+                .borrow()
+                .get(element_id)
+                .unwrap()
+                .get()
+                .to_render_object_id();
+
+            return Some(
+                build_context
+                    .render_tree
+                    .borrow()
+                    .get(render_object_id.expect(
+                        "Mount render_object_element, but didn't mount associated render_object",
+                    ))
+                    .expect("Remove render object but not remove render_object_element")
+                    .get()
+                    .clone(),
+            );
+        }
+
+        None
     }
 }
 
