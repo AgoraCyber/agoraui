@@ -90,7 +90,26 @@ fn test_mount() {
         .to_id()
         .is_some());
 
-    let id = element.first_render_object_id(&context);
+    let id = element.first_render_object_element(&context);
 
-    assert!(id.is_some());
+    assert_eq!(
+        id,
+        element_id.children(&context.element_tree.borrow()).next()
+    );
+
+    let render_object_id = context
+        .element_tree
+        .borrow()
+        .get(id.unwrap())
+        .unwrap()
+        .get()
+        .to_render_object_id();
+
+    assert!(render_object_id.is_some());
+
+    assert!(context
+        .render_tree
+        .borrow()
+        .get(render_object_id.unwrap())
+        .is_some());
 }

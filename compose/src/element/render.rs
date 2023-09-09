@@ -89,8 +89,8 @@ impl RenderObjectElement {
 }
 
 impl Lifecycle for RenderObjectElement {
-    fn first_render_object_id(&self, _build_context: &FrameworkContext) -> Option<RenderObjectId> {
-        self.content.borrow().render_object_id
+    fn first_render_object_element(&self, _build_context: &FrameworkContext) -> Option<ElementId> {
+        self.to_id()
     }
     fn to_render_object_id(&self) -> Option<RenderObjectId> {
         self.content.borrow().render_object_id.clone()

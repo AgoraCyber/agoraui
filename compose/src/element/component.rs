@@ -1,7 +1,4 @@
-use crate::{
-    framework::FrameworkContext,
-    view::{RenderObjectId, View},
-};
+use crate::{framework::FrameworkContext, view::View};
 
 use super::{ElementId, Lifecycle};
 
@@ -33,7 +30,7 @@ pub trait ComponentElement: Lifecycle {
     fn composite_first_render_object_id(
         &self,
         build_context: &FrameworkContext,
-    ) -> Option<RenderObjectId> {
+    ) -> Option<ElementId> {
         let arena = build_context.element_tree.borrow();
         let children = self.to_id().unwrap().children(&arena);
 
@@ -41,7 +38,7 @@ pub trait ComponentElement: Lifecycle {
             let id = arena.get(child).unwrap().get().to_render_object_id();
 
             if id.is_some() {
-                return id;
+                return Some(child);
             }
         }
 
