@@ -1,6 +1,6 @@
 use super::*;
 
-pub trait CompositeElement: ElementProvider + GetChild + UpdateChild {
+pub trait CompositeElement: Lifecycle + GetChild {
     fn build(&mut self) -> View;
 
     fn set_child(&mut self, new: Option<ElementId>);

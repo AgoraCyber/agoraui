@@ -48,7 +48,7 @@ impl GetChild for RenderElement {
     }
 }
 
-impl Mountable for RenderElement {
+impl Lifecycle for RenderElement {
     fn rebuild(&mut self, _arena: &mut Arena<Element>) {
         let render_object = self.config.view.borrow().framework_create_render_object();
         self.attach_render_object(render_object);
@@ -60,5 +60,3 @@ impl RenderElement {
         self.content.render_object = Some(render_object);
     }
 }
-
-impl UpdateChild for RenderElement {}

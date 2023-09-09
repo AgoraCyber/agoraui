@@ -37,7 +37,7 @@ pub trait GetChild {
     fn child(&self) -> Option<ElementId>;
 }
 
-pub trait Mountable: ElementProvider {
+pub trait Lifecycle: ElementProvider + ToConfiguration {
     fn rebuild(&mut self, _arena: &mut Arena<Element>);
 
     fn mount(&mut self, arena: &mut Arena<Element>, parent: Option<ElementId>) {
@@ -47,17 +47,7 @@ pub trait Mountable: ElementProvider {
 
         self.set_mount_flag(true);
     }
-}
 
-pub trait ElementProvider {
-    fn mounted(&self) -> bool;
-
-    fn set_mount_flag(&mut self, flag: bool);
-
-    fn to_id(&self) -> ElementId;
-}
-
-pub trait UpdateChild: ToConfiguration + ElementProvider {
     fn update_child(
         &mut self,
         arena: &mut Arena<Element>,
@@ -108,6 +98,14 @@ pub trait UpdateChild: ToConfiguration + ElementProvider {
 
         child_id
     }
+}
+
+pub trait ElementProvider {
+    fn mounted(&self) -> bool;
+
+    fn set_mount_flag(&mut self, flag: bool);
+
+    fn to_id(&self) -> ElementId;
 }
 
 #[derive(Debug, Clone)]

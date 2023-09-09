@@ -47,15 +47,13 @@ impl CompositeElement for StatelessElement {
     }
 }
 
-impl UpdateChild for StatelessElement {}
-
 impl GetChild for StatelessElement {
     fn child(&self) -> Option<ElementId> {
         self.content.clone()
     }
 }
 
-impl Mountable for StatelessElement {
+impl Lifecycle for StatelessElement {
     fn rebuild(&mut self, arena: &mut Arena<Element>) {
         self.composite_rebuild(arena)
     }
