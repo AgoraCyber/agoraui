@@ -52,6 +52,8 @@ impl RenderObjectElement {
 
         render_object.initialize(render_object_id);
 
+        self.content.borrow_mut().render_object_id = Some(render_object_id);
+
         let ancestor_render_object_id =
             self.find_ancestor_render_object_element(&mut build_context.element_tree.borrow_mut());
 
@@ -87,6 +89,9 @@ impl RenderObjectElement {
 }
 
 impl Lifecycle for RenderObjectElement {
+    fn first_render_object_id(&self, _build_context: &FrameworkContext) -> Option<RenderObjectId> {
+        self.content.borrow().render_object_id
+    }
     fn to_render_object_id(&self) -> Option<RenderObjectId> {
         self.content.borrow().render_object_id.clone()
     }

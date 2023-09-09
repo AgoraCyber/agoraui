@@ -34,6 +34,9 @@ impl StatelessElement {
 }
 
 impl Lifecycle for StatelessElement {
+    fn first_render_object_id(&self, build_context: &FrameworkContext) -> Option<RenderObjectId> {
+        self.composite_first_render_object_id(build_context)
+    }
     fn to_render_object_id(&self) -> Option<RenderObjectId> {
         None
     }

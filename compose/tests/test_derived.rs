@@ -90,5 +90,7 @@ fn test_mount() {
         .to_id()
         .is_some());
 
-    
+    let id = element.first_render_object_id(&context);
+
+    assert!(id.is_some());
 }

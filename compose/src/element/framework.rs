@@ -20,6 +20,7 @@ pub trait Initializer {
 
 /// Framework call this trait to handle element lifecycle.
 pub trait Lifecycle: Initializer + Debug {
+    fn first_render_object_id(&self, build_context: &FrameworkContext) -> Option<RenderObjectId>;
     fn to_render_object_id(&self) -> Option<RenderObjectId>;
 
     fn to_configuration(&self) -> View;
@@ -136,6 +137,13 @@ impl Element {
 
     pub fn to_render_object_id(&self) -> Option<RenderObjectId> {
         self.0.to_render_object_id()
+    }
+
+    pub fn first_render_object_id(
+        &self,
+        build_context: &FrameworkContext,
+    ) -> Option<RenderObjectId> {
+        self.0.first_render_object_id(build_context)
     }
 }
 
