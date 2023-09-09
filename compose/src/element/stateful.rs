@@ -1,6 +1,9 @@
 use indextree::Arena;
 
-use crate::view::{Configuration, State, StatefulConfiguration, View};
+use crate::{
+    framework::FrameworkContext,
+    view::{Configuration, State, StatefulConfiguration, View},
+};
 
 use super::{
     component::ComponentElement, BuildContext, Element, ElementId, ElementNode, Lifecycle,
@@ -33,28 +36,22 @@ impl StatefulElement {
             .into(),
         );
 
-        arena
-            .get_mut(id)
-            .unwrap()
-            .get_mut()
-            .0
-            .borrow_mut()
-            .initialize(id);
+        arena.get_mut(id).unwrap().get_mut().initialize(id);
 
         id
     }
 }
 
 impl Lifecycle for StatefulElement {
-    fn rebuild(&mut self, arena: &mut Arena<Element>) {
-        self.composite_rebuild(arena);
+    fn rebuild(&mut self, build_context: &mut FrameworkContext) {
+        self.composite_rebuild(build_context);
     }
 
     fn to_configuration(&self) -> crate::view::View {
         View::Stateful(self.config.clone())
     }
 
-    fn update(&mut self, configuration: crate::view::View) {
+    fn update(&mut self, _build_context: &mut FrameworkContext, configuration: crate::view::View) {
         if let View::Stateful(config) = configuration {
             self.config = config
         } else {

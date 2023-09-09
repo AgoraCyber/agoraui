@@ -1,8 +1,6 @@
-use indextree::Arena;
+use crate::{framework::FrameworkContext, view::View};
 
-use crate::view::View;
-
-use super::{Element, ElementId, Lifecycle};
+use super::{ElementId, Lifecycle};
 
 pub trait ComponentElement: Lifecycle {
     fn build(&mut self) -> View;
@@ -11,14 +9,20 @@ pub trait ComponentElement: Lifecycle {
 
     fn child(&self) -> Option<ElementId>;
 
-    fn composite_rebuild(&mut self, arena: &mut Arena<Element>) {
+    fn composite_rebuild(&mut self, build_context: &mut FrameworkContext) {
         let new_configuration = self.build();
 
-        let child = self
-            .child()
-            .map(|id| arena.get_mut(id).unwrap().get_mut().clone());
+        let child = self.child().map(|id| {
+            build_context
+                .element_tree
+                .borrow()
+                .get(id)
+                .unwrap()
+                .get()
+                .clone()
+        });
 
-        let child = self.update_child(arena, child, new_configuration);
+        let child = self.update_child(build_context, child, new_configuration);
 
         self.set_child(child);
     }

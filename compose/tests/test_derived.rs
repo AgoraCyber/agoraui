@@ -1,4 +1,4 @@
-use agoraui_compose::prelude::*;
+use agoraui_compose::{framework::FrameworkContext, prelude::*};
 use indextree::Arena;
 
 #[derive(Debug, PartialEq, Stateless)]
@@ -14,7 +14,7 @@ impl Text {
 struct Label {}
 
 impl Label {
-    fn create_render_object(&self) -> impl RenderObject {
+    fn create_render_object(&self) -> impl RenderObjectLifecycle {
         LabelRenderObject {}
     }
 
@@ -26,7 +26,7 @@ impl Label {
 #[derive(Debug)]
 struct LabelRenderObject {}
 
-impl RenderObject for LabelRenderObject {}
+impl RenderObjectLifecycle for LabelRenderObject {}
 
 #[test]
 fn test_into_view() {
@@ -63,14 +63,30 @@ fn test_arena_ancestors() {
 
 #[test]
 fn test_mount() {
-    let mut arena = Arena::new();
+    let mut context = FrameworkContext::default();
     let view = Text {}.into_view();
 
-    let element_id = view.into_element(&mut arena).unwrap();
+    let element_id = view
+        .into_element(&mut context.element_tree.borrow_mut())
+        .unwrap();
 
-    let element = arena.get(element_id).unwrap().get().clone();
+    let mut element = context
+        .element_tree
+        .clone()
+        .borrow_mut()
+        .get_mut(element_id)
+        .unwrap()
+        .get()
+        .clone();
 
-    element.mount(&mut arena, None);
+    element.mount(&mut context, None);
 
-    assert!(arena.get(element_id).unwrap().get().to_id().is_some());
+    assert!(context
+        .element_tree
+        .borrow()
+        .get(element_id)
+        .unwrap()
+        .get()
+        .to_id()
+        .is_some());
 }

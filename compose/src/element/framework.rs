@@ -1,8 +1,11 @@
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
-use indextree::{Arena, NodeId};
+use indextree::NodeId;
 
-use crate::view::{Configuration, View};
+use crate::{
+    framework::FrameworkContext,
+    view::{Configuration, View},
+};
 
 /// Element id in index tree.
 pub type ElementId = NodeId;
@@ -19,29 +22,31 @@ pub trait Initializer {
 pub trait Lifecycle: Initializer + Debug {
     fn to_configuration(&self) -> View;
 
-    fn update(&mut self, configuration: View);
+    fn update(&mut self, build_context: &mut FrameworkContext, configuration: View);
 
-    fn rebuild(&mut self, arena: &mut Arena<Element>);
+    fn rebuild(&mut self, build_context: &mut FrameworkContext);
 
     /// Mount element into element tree.
-    fn mount(&mut self, arena: &mut Arena<Element>, parent: Option<ElementId>) {
-        parent.map(|p| p.append(self.to_id().expect("Call initialize first"), arena));
+    fn mount(&mut self, build_context: &mut FrameworkContext, parent: Option<ElementId>) {
+        parent.map(|p| {
+            p.append(
+                self.to_id().expect("Call initialize first"),
+                &mut build_context.element_tree.borrow_mut(),
+            )
+        });
 
-        self.rebuild(arena);
+        self.rebuild(build_context);
     }
 
     fn update_child(
         &mut self,
-        arena: &mut Arena<Element>,
+        build_context: &mut FrameworkContext,
         child: Option<Element>,
         new_configuration: View,
     ) -> Option<ElementId> {
         if let View::Empty = new_configuration {
             if let Some(child) = child {
-                self.deactive_child(
-                    arena,
-                    child.0.borrow().to_id().expect("Call initialize first"),
-                );
+                self.deactive_child(build_context, child.to_id().expect("Call initialize first"));
             }
 
             return None;
@@ -49,42 +54,50 @@ pub trait Lifecycle: Initializer + Debug {
 
         let configuration = self.to_configuration();
 
-        if let Some(child) = child {
+        if let Some(mut child) = child {
             if configuration == new_configuration {
                 // Skip update child element.
-                Some(child.0.borrow().to_id().expect("Call initialize first"))
+                Some(child.to_id().expect("Call initialize first"))
             } else if configuration.same_type(&new_configuration)
                 && configuration.to_keypath() == new_configuration.to_keypath()
             {
                 // Same element type and path with different configuration.
-                child.0.borrow_mut().update(new_configuration);
-                Some(child.0.borrow().to_id().expect("Call initialize first"))
+                child.update(build_context, new_configuration);
+                Some(child.to_id().expect("Call initialize first"))
             } else {
-                self.deactive_child(
-                    arena,
-                    child.0.borrow().to_id().expect("Call initialize first"),
-                );
-                self.inflate_view(arena, new_configuration)
+                self.deactive_child(build_context, child.to_id().expect("Call initialize first"));
+                self.inflate_view(build_context, new_configuration)
             }
         } else {
-            self.inflate_view(arena, new_configuration)
+            self.inflate_view(build_context, new_configuration)
         }
     }
 
-    fn deactive_child(&mut self, arena: &mut Arena<Element>, id: ElementId) {
-        id.remove(arena);
+    fn deactive_child(&mut self, build_context: &mut FrameworkContext, id: ElementId) {
+        id.remove(&mut build_context.element_tree.borrow_mut());
     }
 
-    fn inflate_view(&mut self, arena: &mut Arena<Element>, configuration: View) -> Option<NodeId> {
-        let child_id = configuration.into_element(arena);
+    fn inflate_view(
+        &mut self,
+        build_context: &mut FrameworkContext,
+        configuration: View,
+    ) -> Option<NodeId> {
+        let child_id = configuration.into_element(&mut build_context.element_tree.borrow_mut());
 
         if let Some(child_id) = child_id {
-            let element = arena.get(child_id).unwrap().get().clone();
-
-            element
-                .0
+            let mut element = build_context
+                .clone()
+                .element_tree
                 .borrow_mut()
-                .mount(arena, Some(self.to_id().expect("Call initialize first")));
+                .get_mut(child_id)
+                .unwrap()
+                .get_mut()
+                .clone();
+
+            element.mount(
+                build_context,
+                Some(self.to_id().expect("Call initialize first")),
+            );
         }
 
         child_id
@@ -102,13 +115,21 @@ impl<T: Lifecycle + 'static> From<T> for Element {
 }
 
 impl Element {
-    pub fn mount(&self, arena: &mut Arena<Element>, parent: Option<ElementId>) {
-        self.0.borrow_mut().mount(arena, parent)
+    pub fn mount(&mut self, build_context: &mut FrameworkContext, parent: Option<ElementId>) {
+        self.0.borrow_mut().mount(build_context, parent)
     }
 
     /// Get element mounted id .
     pub fn to_id(&self) -> Option<ElementId> {
         self.0.borrow().to_id()
+    }
+
+    fn update(&mut self, build_context: &mut FrameworkContext, configuration: View) {
+        self.0.borrow_mut().update(build_context, configuration);
+    }
+
+    pub fn initialize(&mut self, id: ElementId) {
+        self.0.borrow_mut().initialize(id);
     }
 }
 

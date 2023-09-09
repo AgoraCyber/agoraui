@@ -1,10 +1,19 @@
 use indextree::Arena;
 
-use crate::view::{Configuration, RenderObjectConfiguration, View};
+use crate::{
+    framework::FrameworkContext,
+    view::{Configuration, RenderObjectConfiguration, View},
+};
 
 use super::{BuildContext, Element, ElementId, ElementNode, Lifecycle};
 
-pub type RenderObjectElement = ElementNode<dyn RenderObjectConfiguration, ()>;
+#[derive(Debug)]
+pub struct RenderObjectElementContent {
+    pub children: Vec<ElementId>,
+}
+
+pub type RenderObjectElement =
+    ElementNode<dyn RenderObjectConfiguration, RenderObjectElementContent>;
 
 impl RenderObjectElement {
     pub fn new(
@@ -15,31 +24,39 @@ impl RenderObjectElement {
             RenderObjectElement {
                 id: None,
                 config,
-                content: (),
+                content: RenderObjectElementContent { children: vec![] },
             }
             .into(),
         );
 
-        arena
-            .get_mut(id)
-            .unwrap()
-            .get_mut()
-            .0
-            .borrow_mut()
-            .initialize(id);
+        arena.get_mut(id).unwrap().get_mut().initialize(id);
 
         id
     }
 }
 
 impl Lifecycle for RenderObjectElement {
-    fn rebuild(&mut self, _arena: &mut Arena<Element>) {}
+    fn rebuild(&mut self, build_context: &mut FrameworkContext) {
+        let _render_object = self.config.view.borrow().framework_create_render_object();
+
+        let configs = self.config.view.borrow().framework_render_object_children();
+
+        let mut children = vec![];
+
+        for child in configs {
+            if let Some(id) = self.inflate_view(build_context, child) {
+                children.push(id);
+            }
+        }
+
+        self.content.children = children;
+    }
 
     fn to_configuration(&self) -> crate::view::View {
         View::RenderObject(self.config.clone())
     }
 
-    fn update(&mut self, configuration: crate::view::View) {
+    fn update(&mut self, _build_context: &mut FrameworkContext, configuration: crate::view::View) {
         if let View::RenderObject(config) = configuration {
             self.config = config
         } else {

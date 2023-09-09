@@ -55,8 +55,8 @@ pub fn derive_render_object(item: TokenStream) -> TokenStream {
     quote! {
 
         impl #impl_generics agoraui_compose::view::RenderObjectConfiguration for #name #ty_generics #where_clause {
-            fn framework_create_render_object(&self) -> Box<dyn agoraui_compose::render::RenderObject> {
-                Box::new(self.create_render_object())
+            fn framework_create_render_object(&self) -> agoraui_compose::render::RenderObject {
+                self.create_render_object().into()
             }
 
             fn framework_render_object_children(&self) -> Vec<View> {
