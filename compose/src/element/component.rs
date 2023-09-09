@@ -1,9 +1,15 @@
-use super::*;
+use indextree::Arena;
 
-pub trait CompositeElement: Lifecycle + GetChild {
+use crate::view::View;
+
+use super::{Element, ElementId, Lifecycle};
+
+pub trait ComponentElement: Lifecycle {
     fn build(&mut self) -> View;
 
     fn set_child(&mut self, new: Option<ElementId>);
+
+    fn child(&self) -> Option<ElementId>;
 
     fn composite_rebuild(&mut self, arena: &mut Arena<Element>) {
         let new_configuration = self.build();

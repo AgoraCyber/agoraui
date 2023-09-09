@@ -27,7 +27,7 @@ pub trait StatefulConfiguration: ToAny + AnyEq + IntoView + Debug {
     fn framework_create_state(&self) -> Box<dyn State>;
 }
 
-pub trait State {
+pub trait State: Debug {
     fn framework_build(&self, element: &mut StatefulElement) -> View;
 }
 
@@ -113,7 +113,7 @@ impl View {
             View::Empty => None,
             View::Stateful(config) => StatefulElement::new(arena, config).into(),
             View::Stateless(config) => StatelessElement::new(arena, config).into(),
-            View::RenderObject(config) => RenderElement::new(arena, config).into(),
+            View::RenderObject(config) => RenderObjectElement::new(arena, config).into(),
         }
     }
 

@@ -1,60 +1,69 @@
-use super::*;
+use indextree::Arena;
 
-pub type StatelessElement = ElementWrapper<dyn StatelessConfiguration, Option<ElementId>>;
+use crate::view::{Configuration, StatelessConfiguration, View};
+
+use super::{
+    component::ComponentElement, BuildContext, Element, ElementId, ElementNode, Lifecycle,
+};
+
+pub type StatelessElement = ElementNode<dyn StatelessConfiguration, Option<ElementId>>;
 
 impl StatelessElement {
-    pub(crate) fn new(
+    pub fn new(
         arena: &mut Arena<Element>,
         config: Configuration<dyn StatelessConfiguration>,
     ) -> ElementId {
-        let id = arena.new_node(Element::Stateless(Rc::new(RefCell::new(
+        let id = arena.new_node(
             StatelessElement {
                 id: None,
                 config,
-                mounted: false,
                 content: None,
-            },
-        ))));
+            }
+            .into(),
+        );
 
-        match arena.get_mut(id).unwrap().get_mut() {
-            Element::Stateless(e) => e.borrow_mut().id = Some(id),
-            _ => {}
-        }
+        arena
+            .get_mut(id)
+            .unwrap()
+            .get_mut()
+            .0
+            .borrow_mut()
+            .initialize(id);
 
         id
     }
 }
 
-impl ToConfiguration for StatelessElement {
-    fn to_configuration(&self) -> View {
+impl Lifecycle for StatelessElement {
+    fn rebuild(&mut self, arena: &mut Arena<Element>) {
+        self.composite_rebuild(arena);
+    }
+
+    fn to_configuration(&self) -> crate::view::View {
         View::Stateless(self.config.clone())
     }
 
-    fn update_configuration(&mut self, view: View) {
-        if let View::Stateless(config) = view {
+    fn update(&mut self, configuration: crate::view::View) {
+        if let View::Stateless(config) = configuration {
             self.config = config
+        } else {
+            panic!("Update configuration type mismatch, expect Stateless configuration");
         }
     }
 }
 
-impl CompositeElement for StatelessElement {
-    fn build(&mut self) -> View {
+impl ComponentElement for StatelessElement {
+    fn build(&mut self) -> crate::view::View {
         self.config.view.clone().borrow().framework_build(self)
     }
 
     fn set_child(&mut self, new: Option<ElementId>) {
-        self.content = new
+        self.content = new;
     }
-}
 
-impl GetChild for StatelessElement {
     fn child(&self) -> Option<ElementId> {
         self.content.clone()
     }
 }
 
-impl Lifecycle for StatelessElement {
-    fn rebuild(&mut self, arena: &mut Arena<Element>) {
-        self.composite_rebuild(arena)
-    }
-}
+impl BuildContext for StatelessElement {}

@@ -119,7 +119,7 @@ pub fn derive_composite_with_state(item: TokenStream) -> TokenStream {
             }
         }
 
-        impl #impl_generics agoraui_compose::view::ntoView for #name #ty_generics #where_clause {
+        impl #impl_generics agoraui_compose::view::IntoView for #name #ty_generics #where_clause {
             #[track_caller]
             fn into_view(self) ->  agoraui_compose::view::View {
                 let caller: agoraui_compose::keypath::KeyPath = std::panic::Location::caller().into();

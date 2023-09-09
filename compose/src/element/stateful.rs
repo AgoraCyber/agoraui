@@ -1,58 +1,85 @@
-use super::*;
+use indextree::Arena;
 
-pub type StatefulElement = ElementWrapper<dyn StatefulConfiguration, Option<ElementId>>;
+use crate::view::{Configuration, State, StatefulConfiguration, View};
+
+use super::{
+    component::ComponentElement, BuildContext, Element, ElementId, ElementNode, Lifecycle,
+};
+
+#[derive(Debug)]
+pub struct StatefulElementContent {
+    pub child: Option<ElementId>,
+    pub state: Option<Box<dyn State>>,
+}
+
+pub type StatefulElement = ElementNode<dyn StatefulConfiguration, StatefulElementContent>;
 
 impl StatefulElement {
-    pub(crate) fn new(
+    pub fn new(
         arena: &mut Arena<Element>,
         config: Configuration<dyn StatefulConfiguration>,
     ) -> ElementId {
-        let id = arena.new_node(Element::Stateful(Rc::new(RefCell::new(StatefulElement {
-            id: None,
-            config,
-            mounted: false,
-            content: None,
-        }))));
+        let state = config.view.borrow().framework_create_state();
 
-        match arena.get_mut(id).unwrap().get_mut() {
-            Element::Stateful(e) => e.borrow_mut().id = Some(id),
-            _ => {}
-        }
+        let id = arena.new_node(
+            StatefulElement {
+                id: None,
+                config,
+                content: StatefulElementContent {
+                    child: None,
+                    state: Some(state),
+                },
+            }
+            .into(),
+        );
+
+        arena
+            .get_mut(id)
+            .unwrap()
+            .get_mut()
+            .0
+            .borrow_mut()
+            .initialize(id);
 
         id
     }
 }
 
-impl ToConfiguration for StatefulElement {
-    fn to_configuration(&self) -> View {
+impl Lifecycle for StatefulElement {
+    fn rebuild(&mut self, arena: &mut Arena<Element>) {
+        self.composite_rebuild(arena);
+    }
+
+    fn to_configuration(&self) -> crate::view::View {
         View::Stateful(self.config.clone())
     }
 
-    fn update_configuration(&mut self, view: View) {
-        if let View::Stateful(config) = view {
+    fn update(&mut self, configuration: crate::view::View) {
+        if let View::Stateful(config) = configuration {
             self.config = config
+        } else {
+            panic!("Update configuration type mismatch, expect Stateful configuration");
         }
     }
 }
 
-impl CompositeElement for StatefulElement {
-    fn build(&mut self) -> View {
-        todo!()
+impl ComponentElement for StatefulElement {
+    fn build(&mut self) -> crate::view::View {
+        let state = self.content.state.take().unwrap();
+        let view = state.framework_build(self);
+
+        self.content.state = Some(state);
+
+        view
     }
 
     fn set_child(&mut self, new: Option<ElementId>) {
-        self.content = new
+        self.content.child = new;
     }
-}
 
-impl GetChild for StatefulElement {
     fn child(&self) -> Option<ElementId> {
-        self.content.clone()
+        self.content.child.clone()
     }
 }
 
-impl Lifecycle for StatefulElement {
-    fn rebuild(&mut self, arena: &mut Arena<Element>) {
-        self.composite_rebuild(arena)
-    }
-}
+impl BuildContext for StatefulElement {}
