@@ -44,7 +44,7 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro_derive(Leaf)]
+#[proc_macro_derive(Render)]
 pub fn derive_render_object(item: TokenStream) -> TokenStream {
     let item_struct = syn::parse_macro_input!(item as ItemStruct);
 
@@ -57,6 +57,10 @@ pub fn derive_render_object(item: TokenStream) -> TokenStream {
         impl #impl_generics agoraui_compose::view::RenderObjectConfiguration for #name #ty_generics #where_clause {
             fn framework_create_render_object(&self) -> Box<dyn agoraui_compose::render::RenderObject> {
                 Box::new(self.create_render_object())
+            }
+
+            fn framework_render_object_children(&self) -> Vec<View> {
+                self.render_object_children()
             }
         }
 

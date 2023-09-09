@@ -33,9 +33,7 @@ impl RenderObjectElement {
 }
 
 impl Lifecycle for RenderObjectElement {
-    fn rebuild(&mut self, _arena: &mut Arena<Element>) {
-        todo!()
-    }
+    fn rebuild(&mut self, _arena: &mut Arena<Element>) {}
 
     fn to_configuration(&self) -> crate::view::View {
         View::RenderObject(self.config.clone())

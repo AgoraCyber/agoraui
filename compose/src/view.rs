@@ -36,6 +36,7 @@ pub trait StatelessConfiguration: ToAny + AnyEq + IntoView + Debug {
 }
 
 pub trait RenderObjectConfiguration: ToAny + AnyEq + IntoView + Debug {
+    fn framework_render_object_children(&self) -> Vec<View>;
     fn framework_create_render_object(&self) -> Box<dyn RenderObject>;
 }
 
