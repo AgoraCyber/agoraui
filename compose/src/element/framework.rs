@@ -4,7 +4,7 @@ use indextree::NodeId;
 
 use crate::{
     framework::FrameworkContext,
-    view::{Configuration, View},
+    view::{Configuration, RenderObjectId, View},
 };
 
 /// Element id in index tree.
@@ -13,21 +13,23 @@ pub type ElementId = NodeId;
 pub trait BuildContext {}
 
 pub trait Initializer {
-    fn initialize(&mut self, id: ElementId);
+    fn initialize(&self, id: ElementId);
 
     fn to_id(&self) -> Option<ElementId>;
 }
 
 /// Framework call this trait to handle element lifecycle.
 pub trait Lifecycle: Initializer + Debug {
+    fn to_render_object_id(&self) -> Option<RenderObjectId>;
+
     fn to_configuration(&self) -> View;
 
-    fn update(&mut self, build_context: &mut FrameworkContext, configuration: View);
+    fn update(&self, build_context: &mut FrameworkContext, configuration: View);
 
-    fn rebuild(&mut self, build_context: &mut FrameworkContext);
+    fn rebuild(&self, build_context: &mut FrameworkContext);
 
     /// Mount element into element tree.
-    fn mount(&mut self, build_context: &mut FrameworkContext, parent: Option<ElementId>) {
+    fn mount(&self, build_context: &mut FrameworkContext, parent: Option<ElementId>) {
         parent.map(|p| {
             p.append(
                 self.to_id().expect("Call initialize first"),
@@ -39,7 +41,7 @@ pub trait Lifecycle: Initializer + Debug {
     }
 
     fn update_child(
-        &mut self,
+        &self,
         build_context: &mut FrameworkContext,
         child: Option<Element>,
         new_configuration: View,
@@ -54,7 +56,7 @@ pub trait Lifecycle: Initializer + Debug {
 
         let configuration = self.to_configuration();
 
-        if let Some(mut child) = child {
+        if let Some(child) = child {
             if configuration == new_configuration {
                 // Skip update child element.
                 Some(child.to_id().expect("Call initialize first"))
@@ -73,19 +75,19 @@ pub trait Lifecycle: Initializer + Debug {
         }
     }
 
-    fn deactive_child(&mut self, build_context: &mut FrameworkContext, id: ElementId) {
+    fn deactive_child(&self, build_context: &mut FrameworkContext, id: ElementId) {
         id.remove(&mut build_context.element_tree.borrow_mut());
     }
 
     fn inflate_view(
-        &mut self,
+        &self,
         build_context: &mut FrameworkContext,
         configuration: View,
     ) -> Option<NodeId> {
         let child_id = configuration.into_element(&mut build_context.element_tree.borrow_mut());
 
         if let Some(child_id) = child_id {
-            let mut element = build_context
+            let element = build_context
                 .clone()
                 .element_tree
                 .borrow_mut()
@@ -106,46 +108,50 @@ pub trait Lifecycle: Initializer + Debug {
 
 /// Element wrapper
 #[derive(Debug, Clone)]
-pub struct Element(pub Rc<RefCell<dyn Lifecycle>>);
+pub struct Element(pub Rc<dyn Lifecycle + 'static>);
 
 impl<T: Lifecycle + 'static> From<T> for Element {
     fn from(value: T) -> Self {
-        Self(Rc::new(RefCell::new(value)))
+        Self(Rc::new(value))
     }
 }
 
 impl Element {
-    pub fn mount(&mut self, build_context: &mut FrameworkContext, parent: Option<ElementId>) {
-        self.0.borrow_mut().mount(build_context, parent)
+    pub fn mount(&self, build_context: &mut FrameworkContext, parent: Option<ElementId>) {
+        self.0.mount(build_context, parent)
     }
 
     /// Get element mounted id .
     pub fn to_id(&self) -> Option<ElementId> {
-        self.0.borrow().to_id()
+        self.0.to_id()
     }
 
-    fn update(&mut self, build_context: &mut FrameworkContext, configuration: View) {
-        self.0.borrow_mut().update(build_context, configuration);
+    fn update(&self, build_context: &mut FrameworkContext, configuration: View) {
+        self.0.update(build_context, configuration);
     }
 
-    pub fn initialize(&mut self, id: ElementId) {
-        self.0.borrow_mut().initialize(id);
+    pub fn initialize(&self, id: ElementId) {
+        self.0.initialize(id);
+    }
+
+    pub fn to_render_object_id(&self) -> Option<RenderObjectId> {
+        self.0.to_render_object_id()
     }
 }
 
 #[derive(Debug)]
 pub struct ElementNode<T: ?Sized, C> {
-    pub id: Option<ElementId>,
-    pub config: Configuration<T>,
-    pub content: C,
+    pub id: RefCell<Option<ElementId>>,
+    pub config: RefCell<Configuration<T>>,
+    pub content: RefCell<C>,
 }
 
 impl<T: ?Sized, C> Initializer for ElementNode<T, C> {
-    fn initialize(&mut self, id: ElementId) {
-        self.id = Some(id);
+    fn initialize(&self, id: ElementId) {
+        *self.id.borrow_mut() = Some(id);
     }
 
     fn to_id(&self) -> Option<ElementId> {
-        self.id
+        self.id.borrow().clone()
     }
 }

@@ -28,11 +28,11 @@ pub trait StatefulConfiguration: ToAny + AnyEq + IntoView + Debug {
 }
 
 pub trait State: Debug {
-    fn framework_build(&self, element: &mut StatefulElement) -> View;
+    fn framework_build(&self, element: &StatefulElement) -> View;
 }
 
 pub trait StatelessConfiguration: ToAny + AnyEq + IntoView + Debug {
-    fn framework_build(&self, element: &mut StatelessElement) -> View;
+    fn framework_build(&self, element: &StatelessElement) -> View;
 }
 
 pub trait RenderObjectConfiguration: ToAny + AnyEq + IntoView + Debug {

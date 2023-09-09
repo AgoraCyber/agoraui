@@ -15,7 +15,7 @@ pub fn derive_composite(item: TokenStream) -> TokenStream {
     quote! {
 
         impl #impl_generics agoraui_compose::view::StatelessConfiguration for #name #ty_generics #where_clause {
-            fn framework_build(&self, element: &mut agoraui_compose::element::StatelessElement) -> agoraui_compose::view::View {
+            fn framework_build(&self, element: &agoraui_compose::element::StatelessElement) -> agoraui_compose::view::View {
                 self.build(element).into_view()
             }
         }
@@ -99,7 +99,7 @@ pub fn derive_state(item: TokenStream) -> TokenStream {
     quote! {
 
         impl #impl_generics agoraui_compose::view::State for #name #ty_generics #where_clause {
-            fn framework_build(&self, element: element: &mut agoraui_compose::element::StatefulElement) -> agoraui_compose::View {
+            fn framework_build(&self, element: element: &agoraui_compose::element::StatefulElement) -> agoraui_compose::View {
                 self.build(element).into_view()
             }
         }

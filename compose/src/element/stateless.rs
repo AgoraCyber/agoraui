@@ -1,8 +1,10 @@
+use std::cell::RefCell;
+
 use indextree::Arena;
 
 use crate::{
     framework::FrameworkContext,
-    view::{Configuration, StatelessConfiguration, View},
+    view::{Configuration, RenderObjectId, StatelessConfiguration, View},
 };
 
 use super::{
@@ -18,9 +20,9 @@ impl StatelessElement {
     ) -> ElementId {
         let id = arena.new_node(
             StatelessElement {
-                id: None,
-                config,
-                content: None,
+                id: RefCell::new(None),
+                config: RefCell::new(config),
+                content: RefCell::new(None),
             }
             .into(),
         );
@@ -32,17 +34,20 @@ impl StatelessElement {
 }
 
 impl Lifecycle for StatelessElement {
-    fn rebuild(&mut self, build_context: &mut FrameworkContext) {
+    fn to_render_object_id(&self) -> Option<RenderObjectId> {
+        None
+    }
+    fn rebuild(&self, build_context: &mut FrameworkContext) {
         self.composite_rebuild(build_context);
     }
 
     fn to_configuration(&self) -> crate::view::View {
-        View::Stateless(self.config.clone())
+        View::Stateless(self.config.borrow().clone())
     }
 
-    fn update(&mut self, _build_context: &mut FrameworkContext, configuration: crate::view::View) {
+    fn update(&self, _build_context: &mut FrameworkContext, configuration: crate::view::View) {
         if let View::Stateless(config) = configuration {
-            self.config = config
+            *self.config.borrow_mut() = config
         } else {
             panic!("Update configuration type mismatch, expect Stateless configuration");
         }
@@ -50,16 +55,21 @@ impl Lifecycle for StatelessElement {
 }
 
 impl ComponentElement for StatelessElement {
-    fn build(&mut self) -> crate::view::View {
-        self.config.view.clone().borrow().framework_build(self)
+    fn build(&self) -> crate::view::View {
+        self.config
+            .borrow()
+            .view
+            .clone()
+            .borrow()
+            .framework_build(self)
     }
 
-    fn set_child(&mut self, new: Option<ElementId>) {
-        self.content = new;
+    fn set_child(&self, new: Option<ElementId>) {
+        *self.content.borrow_mut() = new;
     }
 
     fn child(&self) -> Option<ElementId> {
-        self.content.clone()
+        self.content.borrow().clone()
     }
 }
 

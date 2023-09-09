@@ -24,3 +24,9 @@ impl<T: RenderObjectLifecycle + 'static> From<T> for RenderObject {
         })))
     }
 }
+
+impl RenderObject {
+    pub fn initialize(&mut self, id: RenderObjectId) {
+        self.0.borrow_mut().id = Some(id);
+    }
+}

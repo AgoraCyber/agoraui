@@ -1,8 +1,10 @@
+use std::cell::RefCell;
+
 use indextree::Arena;
 
 use crate::{
     framework::FrameworkContext,
-    view::{Configuration, State, StatefulConfiguration, View},
+    view::{Configuration, RenderObjectId, State, StatefulConfiguration, View},
 };
 
 use super::{
@@ -26,12 +28,12 @@ impl StatefulElement {
 
         let id = arena.new_node(
             StatefulElement {
-                id: None,
-                config,
-                content: StatefulElementContent {
+                id: RefCell::new(None),
+                config: RefCell::new(config),
+                content: RefCell::new(StatefulElementContent {
                     child: None,
                     state: Some(state),
-                },
+                }),
             }
             .into(),
         );
@@ -43,17 +45,20 @@ impl StatefulElement {
 }
 
 impl Lifecycle for StatefulElement {
-    fn rebuild(&mut self, build_context: &mut FrameworkContext) {
+    fn to_render_object_id(&self) -> Option<RenderObjectId> {
+        None
+    }
+    fn rebuild(&self, build_context: &mut FrameworkContext) {
         self.composite_rebuild(build_context);
     }
 
     fn to_configuration(&self) -> crate::view::View {
-        View::Stateful(self.config.clone())
+        View::Stateful(self.config.borrow().clone())
     }
 
-    fn update(&mut self, _build_context: &mut FrameworkContext, configuration: crate::view::View) {
+    fn update(&self, _build_context: &mut FrameworkContext, configuration: crate::view::View) {
         if let View::Stateful(config) = configuration {
-            self.config = config
+            *self.config.borrow_mut() = config
         } else {
             panic!("Update configuration type mismatch, expect Stateful configuration");
         }
@@ -61,21 +66,21 @@ impl Lifecycle for StatefulElement {
 }
 
 impl ComponentElement for StatefulElement {
-    fn build(&mut self) -> crate::view::View {
-        let state = self.content.state.take().unwrap();
+    fn build(&self) -> crate::view::View {
+        let state = self.content.borrow_mut().state.take().unwrap();
         let view = state.framework_build(self);
 
-        self.content.state = Some(state);
+        self.content.borrow_mut().state = Some(state);
 
         view
     }
 
-    fn set_child(&mut self, new: Option<ElementId>) {
-        self.content.child = new;
+    fn set_child(&self, new: Option<ElementId>) {
+        self.content.borrow_mut().child = new;
     }
 
     fn child(&self) -> Option<ElementId> {
-        self.content.child.clone()
+        self.content.borrow().child.clone()
     }
 }
 

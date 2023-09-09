@@ -5,7 +5,7 @@ use indextree::Arena;
 struct Text {}
 
 impl Text {
-    fn build(&self, _context: &mut impl BuildContext) -> impl IntoView {
+    fn build(&self, _context: &impl BuildContext) -> impl IntoView {
         Label {}
     }
 }
@@ -70,7 +70,7 @@ fn test_mount() {
         .into_element(&mut context.element_tree.borrow_mut())
         .unwrap();
 
-    let mut element = context
+    let element = context
         .element_tree
         .clone()
         .borrow_mut()
@@ -89,4 +89,6 @@ fn test_mount() {
         .get()
         .to_id()
         .is_some());
+
+    
 }
